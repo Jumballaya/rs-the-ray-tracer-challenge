@@ -88,7 +88,7 @@ mod tests {
     use super::Color;
 
     #[test]
-    fn test_can_create_color() {
+    fn color_can_create_color() {
         let c = Color::new(-0.5, 0.4, 1.7);
         assert!(float_equal(c.r, -0.5));
         assert!(float_equal(c.g, 0.4));
@@ -96,14 +96,14 @@ mod tests {
     }
 
     #[test]
-    fn test_can_scale_color() {
+    fn color_can_scale_color() {
         let c = Color::new(-0.5, 0.4, 1.7);
         let want: (u8, u8, u8) = (0, 102, 255);
         assert_eq!(c.scale(), want);
     }
 
     #[test]
-    fn test_can_add_colors() {
+    fn color_can_add_colors() {
         let c1 = Color::new(0.9, 0.6, 0.75);
         let c2 = Color::new(0.7, 0.1, 0.25);
         let want = Color::new(1.6, 0.7, 1.0);
@@ -112,7 +112,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_subtract_colors() {
+    fn color_can_subtract_colors() {
         let c1 = Color::new(0.9, 0.6, 0.75);
         let c2 = Color::new(0.7, 0.1, 0.25);
         let want = Color::new(0.2, 0.5, 0.5);
@@ -121,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_multiply_color_by_scalar() {
+    fn color_can_multiply_color_by_scalar() {
         let c1 = Color::new(0.2, 0.3, 0.4);
         let c2 = Color::new(0.2, 0.3, 0.4);
         let scalar1 = 2.0;
@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_multiply_colors() {
+    fn color_can_multiply_colors() {
         let c1 = Color::new(1.0, 0.2, 0.4);
         let c2 = Color::new(0.9, 1.0, 0.1);
         let want = Color::new(0.9, 0.2, 0.04);

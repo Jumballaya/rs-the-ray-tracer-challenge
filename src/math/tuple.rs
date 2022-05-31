@@ -1,14 +1,14 @@
 use super::float_equal;
 use std::ops::{self, Index};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TupleType {
     Vector,
     Point,
     None,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Tuple {
     pub x: f64,
     pub y: f64,
@@ -182,7 +182,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_tuple_as_point() {
+    fn tuple_tuple_as_point() {
         let point = Tuple::new_point(4.0, -4.0, 3.0);
         assert!(point.as_tuple() == (4.0, -4.0, 3.0, 1.0));
         assert!(match point.tp {
@@ -192,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tuple_as_vector() {
+    fn tuple_tuple_as_vector() {
         let vector = Tuple::new_vector(4.0, -4.0, 3.0);
         assert!(vector.as_tuple() == (4.0, -4.0, 3.0, 0.0));
         assert!(match vector.tp {
@@ -202,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_add_tuples() {
+    fn tuple_can_add_tuples() {
         let t1 = Tuple::new(3.0, -2.0, 5.0, 1.0);
         let t2 = Tuple::new(-2.0, 3.0, 1.0, 0.0);
         let want = Tuple::new(1.0, 1.0, 6.0, 1.0);
@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn test_subtracting_two_points_gives_vector() {
+    fn tuple_subtracting_two_points_gives_vector() {
         let p1 = Tuple::new_point(3.0, 2.0, 1.0);
         let p2 = Tuple::new_point(5.0, 6.0, 7.0);
         let difference = p1 - p2;
@@ -222,7 +222,7 @@ mod tests {
     }
 
     #[test]
-    fn test_subtracting_a_vector_from_a_point() {
+    fn tuple_subtracting_a_vector_from_a_point() {
         let p = Tuple::new_point(3.0, 2.0, 1.0);
         let v = Tuple::new_vector(5.0, 6.0, 7.0);
         let difference = p - v;
@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn test_subtracting_two_vectors() {
+    fn tuple_subtracting_two_vectors() {
         let v1 = Tuple::new_vector(3.0, 2.0, 1.0);
         let v2 = Tuple::new_vector(5.0, 6.0, 7.0);
         let want = Tuple::new_vector(-2.0, -4.0, -6.0);
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn test_subtract_vector_from_zero_vector() {
+    fn tuple_subtract_vector_from_zero_vector() {
         let zero = Tuple::new_vector(0.0, 0.0, 0.0);
         let v = Tuple::new_vector(1.0, -2.0, 3.0);
         let want = Tuple::new_vector(-1.0, 2.0, -3.0);
@@ -255,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn test_negating_tuple() {
+    fn tuple_negating_tuple() {
         let t = Tuple::new(1.0, -2.0, 3.0, -4.0);
         let neg_t = -t;
         let want = Tuple::new(-1.0, 2.0, -3.0, 4.0);
@@ -263,7 +263,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiply_tuple_by_scalar() {
+    fn tuple_multiply_tuple_by_scalar() {
         let t = Tuple::new(1.0, -2.0, 3.0, -4.0);
         let scalar = 3.5;
         let product = t * scalar;
@@ -272,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiply_tuple_by_fraction() {
+    fn tuple_multiply_tuple_by_fraction() {
         let t = Tuple::new(1.0, -2.0, 3.0, -4.0);
         let scalar = 0.5;
         let product = scalar * t;
@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_compute_magnitude() {
+    fn tuple_can_compute_magnitude() {
         let v1 = Tuple::new_vector(1.0, 0.0, 0.0);
         let v2 = Tuple::new_vector(0.0, 1.0, 0.0);
         let v3 = Tuple::new_vector(0.0, 0.0, 1.0);
@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_normalize_vectors() {
+    fn tuple_can_normalize_vectors() {
         let v1 = Tuple::new_vector(4.0, 0.0, 0.0);
         let v2 = Tuple::new_vector(1.0, 2.0, 3.0);
 
@@ -314,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_compute_dot_product() {
+    fn tuple_can_compute_dot_product() {
         let v1 = Tuple::new_vector(1.0, 2.0, 3.0);
         let v2 = Tuple::new_vector(2.0, 3.0, 4.0);
         let v3 = Tuple::new_vector(1.0, 2.0, 3.0);
@@ -327,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_compute_cross_product() {
+    fn tuple_can_compute_cross_product() {
         let v1 = Tuple::new_vector(1.0, 2.0, 3.0);
         let v2 = Tuple::new_vector(2.0, 3.0, 4.0);
 

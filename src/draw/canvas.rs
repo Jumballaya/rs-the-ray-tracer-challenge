@@ -82,7 +82,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_can_create_canvas() {
+    fn canvas_can_create_canvas() {
         let c = Canvas::new(10, 20);
 
         assert_eq!(c.width, 10);
@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_write_to_canvas() {
+    fn canvas_can_write_to_canvas() {
         let mut c = Canvas::new(10, 20);
         let red = Color::new(1.0, 0.0, 0.0);
         c.set_pixel((2, 3), &red);
@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_construct_ppm_header() {
+    fn canvas_can_construct_ppm_header() {
         let c = Canvas::new(5, 3);
         let mut line_count = 0;
         for line in c.to_string().lines() {
@@ -121,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_construct_ppm_body() {
+    fn canvas_can_construct_ppm_body() {
         let mut c = Canvas::new(5, 3);
 
         let c1 = Color::new(1.5, 0.0, 0.0);
@@ -148,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ppm_long_lines_are_split() {
+    fn canvas_ppm_long_lines_are_split() {
         let mut c = Canvas::new(10, 2);
         let color = Color::new(1.0, 0.8, 0.6);
 

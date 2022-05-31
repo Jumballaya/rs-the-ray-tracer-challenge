@@ -1,19 +1,25 @@
 mod draw;
 mod math;
 
-use draw::{canvas::*, color::Color};
+use draw::{canvas::*, color::*};
+use math::tuple::*;
+
+pub fn draw(width: usize, height: usize, canvas: &mut Canvas) {
+    let mut pos = Tuple::new_vector(0.0, 1.0, 0.0);
+    let mut vel = Tuple::new_vector(0.1, 0.2, 0.0).normalize() * 5.25;
+    let color = Color::new(1.0, 0.0, 0.0);
+    let wind = Tuple::new_vector(-0.001, 0.0, 0.0);
+    let gravity = Tuple::new_vector(0.00, -0.02, 0.0);
+
+    while (pos.x as usize) < width && (pos.y as usize) < height && pos.y > 0.0 {
+        canvas.set_pixel((pos.x as usize, height - (pos.y as usize)), &color);
+        vel = vel + gravity + wind;
+        pos = pos + vel;
+    }
+}
 
 fn main() -> std::io::Result<()> {
-    let mut c = Canvas::new(5, 3);
-
-    let c1 = Color::new(1.5, 0.0, 0.0);
-    let c2 = Color::new(0.0, 0.5, 0.0);
-    let c3 = Color::new(-0.5, 0.0, 1.0);
-
-    c.set_pixel((0, 0), &c1);
-
-    c.set_pixel((2, 1), &c2);
-    c.set_pixel((4, 2), &c3);
-
+    let mut c = Canvas::new(1_000, 1_000);
+    draw(1_000, 1_000, &mut c);
     c.save("./", "test")
 }

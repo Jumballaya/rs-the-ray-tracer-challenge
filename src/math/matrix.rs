@@ -5,6 +5,16 @@ use std::{
 
 use super::{float_equal, tuple::Tuple};
 
+#[derive(Debug, Copy, Clone)]
+pub enum Transformation {
+    Translate(f64, f64, f64),            // Move by (x,y,z)
+    Scale(f64, f64, f64),                // Scale by (x,y,z)
+    RotateX(f64),                        // Rotate by (radians) in X axis
+    RotateY(f64),                        // Rotate by (radians) in X axis
+    RotateZ(f64),                        // Rotate by (radians) in X axis
+    Shear(f64, f64, f64, f64, f64, f64), // Shear by (x:y, x:z, y:x, y:z, z:x, z:y)
+}
+
 #[derive(Debug)]
 pub struct Matrix {
     pub size: usize,
@@ -105,9 +115,9 @@ impl Matrix {
         self.determinant() != 0.0
     }
 
-    pub fn inverse(&self) -> Option<Matrix> {
+    pub fn inverse(self) -> Matrix {
         if !self.is_invertible() {
-            return None;
+            return self;
         }
         let mut data: Vec<Vec<f64>> = vec![];
         for i in 0..self.size {
@@ -123,7 +133,90 @@ impl Matrix {
             }
         }
 
-        Some(Matrix::new(self.size, data))
+        Matrix::new(self.size, data)
+    }
+
+    pub fn transform(tform: Transformation) -> Matrix {
+        match tform {
+            Transformation::Translate(x, y, z) => Matrix {
+                size: 4,
+                data: vec![
+                    vec![1.0, 0.0, 0.0, x],
+                    vec![0.0, 1.0, 0.0, y],
+                    vec![0.0, 0.0, 1.0, z],
+                    vec![0.0, 0.0, 0.0, 1.0],
+                ],
+            },
+            Transformation::Scale(x, y, z) => Matrix {
+                size: 4,
+                data: vec![
+                    vec![x, 0.0, 0.0, 0.0],
+                    vec![0.0, y, 0.0, 0.0],
+                    vec![0.0, 0.0, z, 0.0],
+                    vec![0.0, 0.0, 0.0, 1.0],
+                ],
+            },
+            Transformation::RotateX(r) => Matrix {
+                size: 4,
+                data: vec![
+                    vec![1.0, 0.0, 0.0, 0.0],
+                    vec![0.0, r.cos(), -r.sin(), 0.0],
+                    vec![0.0, r.sin(), r.cos(), 0.0],
+                    vec![0.0, 0.0, 0.0, 1.0],
+                ],
+            },
+            Transformation::RotateY(r) => Matrix {
+                size: 4,
+                data: vec![
+                    vec![r.cos(), 0.0, r.sin(), 0.0],
+                    vec![0.0, 1.0, 0.0, 0.0],
+                    vec![-r.sin(), 0.0, r.cos(), 0.0],
+                    vec![0.0, 0.0, 0.0, 1.0],
+                ],
+            },
+            Transformation::RotateZ(r) => Matrix {
+                size: 4,
+                data: vec![
+                    vec![r.cos(), -r.sin(), 0.0, 0.0],
+                    vec![r.sin(), r.cos(), 0.0, 0.0],
+                    vec![0.0, 0.0, 1.0, 0.0],
+                    vec![0.0, 0.0, 0.0, 1.0],
+                ],
+            },
+            Transformation::Shear(x_y, x_z, y_x, y_z, z_x, z_y) => Matrix {
+                size: 4,
+                data: vec![
+                    vec![1.0, x_y, x_z, 0.0],
+                    vec![y_x, 1.0, y_z, 0.0],
+                    vec![z_x, z_y, 1.0, 0.0],
+                    vec![0.0, 0.0, 0.0, 1.0],
+                ],
+            },
+        }
+    }
+
+    pub fn transform_chain(tforms: &[Transformation]) -> Matrix {
+        let mut m = Matrix::identity_matrix(4);
+        for i in 0..tforms.len() {
+            let t = tforms[tforms.len() - i - 1];
+            m = m * Matrix::transform(t);
+        }
+        m
+    }
+
+    pub fn identity_matrix(size: usize) -> Matrix {
+        let mut data: Vec<Vec<f64>> = vec![];
+        for i in 0..size {
+            data.push(vec![]);
+            for j in 0..size {
+                if i == j {
+                    data[i].push(1.0);
+                } else {
+                    data[i].push(0.0);
+                }
+            }
+        }
+        Matrix { size, data }
     }
 }
 
@@ -228,12 +321,14 @@ impl Mul<Matrix> for Tuple {
 #[cfg(test)]
 mod tests {
 
+    use std::f64::consts::PI;
+
     use crate::math::float_equal;
 
     use super::*;
 
     #[test]
-    fn test_can_create_2x2_matrix() {
+    fn matrix_can_create_2x2_matrix() {
         let data = vec![vec![-3.0, 5.0], vec![1.0, -2.0]];
         let m = Matrix::new(2, data);
 
@@ -244,7 +339,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_create_3x3_matrix() {
+    fn matrix_can_create_3x3_matrix() {
         let data = vec![
             vec![-3.0, 5.0, 0.0],
             vec![1.0, -2.0, -0.7],
@@ -258,7 +353,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_create_4x4_matrix() {
+    fn matrix_can_create_4x4_matrix() {
         let data = vec![
             vec![1.0, 2.0, 3.0, 4.0],
             vec![5.5, 6.5, 7.5, 8.5],
@@ -277,7 +372,7 @@ mod tests {
     }
 
     #[test]
-    fn test_matrix_equality() {
+    fn matrix_matrix_equality() {
         let m1 = Matrix::new(
             4,
             vec![
@@ -300,7 +395,7 @@ mod tests {
     }
 
     #[test]
-    fn test_matrix_inequality() {
+    fn matrix_matrix_inequality() {
         let m1 = Matrix::new(
             4,
             vec![
@@ -323,7 +418,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_multiply_2_matrices() {
+    fn matrix_can_multiply_2_matrices() {
         let m1 = Matrix::new(
             4,
             vec![
@@ -356,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_multiply_matrix_by_tuple() {
+    fn matrix_can_multiply_matrix_by_tuple() {
         let m = Matrix::new(
             4,
             vec![
@@ -373,8 +468,17 @@ mod tests {
     }
 
     #[test]
-    fn test_multiply_by_identity_matrix_by_matrix() {
-        let ident = Matrix::new(
+    fn matrix_can_create_idenity_matrix() {
+        let ident2 = Matrix::new(2, vec![vec![1.0, 0.0], vec![0.0, 1.0]]);
+        let ident3 = Matrix::new(
+            3,
+            vec![
+                vec![1.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 1.0],
+            ],
+        );
+        let ident4 = Matrix::new(
             4,
             vec![
                 vec![1.0, 0.0, 0.0, 0.0],
@@ -383,6 +487,14 @@ mod tests {
                 vec![0.0, 0.0, 0.0, 1.0],
             ],
         );
+        assert_eq!(ident2, Matrix::identity_matrix(2));
+        assert_eq!(ident3, Matrix::identity_matrix(3));
+        assert_eq!(ident4, Matrix::identity_matrix(4));
+    }
+
+    #[test]
+    fn matrix_multiply_by_identity_matrix_by_matrix() {
+        let ident = Matrix::identity_matrix(4);
         let m = Matrix::new(
             4,
             vec![
@@ -406,7 +518,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiply_by_identity_matrix_by_tuple() {
+    fn matrix_multiply_by_identity_matrix_by_tuple() {
         let ident = Matrix::new(
             4,
             vec![
@@ -423,7 +535,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_transpose_a_matrix() {
+    fn matrix_can_transpose_a_matrix() {
         let m = Matrix::new(
             4,
             vec![
@@ -447,7 +559,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_transpose_ident_matrix() {
+    fn matrix_can_transpose_ident_matrix() {
         let ident = Matrix::new(
             4,
             vec![
@@ -471,7 +583,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_get_2x2_matrix_determinate() {
+    fn matrix_can_get_2x2_matrix_determinate() {
         let m = Matrix::new(2, vec![vec![1.0, 5.0], vec![-3.0, 2.0]]);
         let want = 17.0;
         let got = m.determinant();
@@ -479,7 +591,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_get_3x3_submatrix() {
+    fn matrix_can_get_3x3_submatrix() {
         let m = Matrix::new(
             4,
             vec![
@@ -502,7 +614,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_get_2x2_submatrix() {
+    fn matrix_can_get_2x2_submatrix() {
         let m = Matrix::new(
             3,
             vec![
@@ -518,7 +630,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_calculate_3x3_matrix_minor() {
+    fn matrix_can_calculate_3x3_matrix_minor() {
         let m = Matrix::new(
             3,
             vec![
@@ -535,7 +647,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_calculate_3x3_matrix_cofactor() {
+    fn matrix_can_calculate_3x3_matrix_cofactor() {
         let m = Matrix::new(
             3,
             vec![
@@ -556,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_get_3x3_matrix_determinate() {
+    fn matrix_can_get_3x3_matrix_determinate() {
         let m = Matrix::new(
             3,
             vec![
@@ -572,7 +684,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_get_4x4_matrix_determinate() {
+    fn matrix_can_get_4x4_matrix_determinate() {
         let m = Matrix::new(
             4,
             vec![
@@ -590,7 +702,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_test_for_invertability() {
+    fn matrix_can_matrix_for_invertability() {
         let m = Matrix::new(
             4,
             vec![
@@ -617,7 +729,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_calculate_inverse_of_a_matrix_1() {
+    fn matrix_can_calculate_inverse_of_a_matrix_1() {
         let m = Matrix::new(
             4,
             vec![
@@ -630,7 +742,7 @@ mod tests {
         let det = m.determinant();
         let cofactor1 = m.cofactor(2, 3);
         let cofactor2 = m.cofactor(3, 2);
-        let m2 = m.inverse().unwrap_or(m);
+        let m2 = m.inverse();
         assert!(float_equal(det, 532.0));
         assert!(float_equal(cofactor1, -160.0));
         assert!(float_equal(m2[3][2], -(160.0 / 532.0)));
@@ -650,7 +762,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_calculate_inverse_of_a_matrix_2() {
+    fn matrix_can_calculate_inverse_of_a_matrix_2() {
         let m = Matrix::new(
             4,
             vec![
@@ -660,7 +772,7 @@ mod tests {
                 vec![-3.0, 0.0, -9.0, -4.0],
             ],
         );
-        let m2 = m.inverse().unwrap_or(m);
+        let m2 = m.inverse();
         let want = Matrix::new(
             4,
             vec![
@@ -674,7 +786,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_calculate_inverse_of_a_matrix_3() {
+    fn matrix_can_calculate_inverse_of_a_matrix_3() {
         let m = Matrix::new(
             4,
             vec![
@@ -684,7 +796,7 @@ mod tests {
                 vec![-7.0, 6.0, 6.0, 2.0],
             ],
         );
-        let m2 = m.inverse().unwrap_or(m);
+        let m2 = m.inverse();
         let want = Matrix::new(
             4,
             vec![
@@ -698,7 +810,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiply_product_by_inverse() {
+    fn matrix_multiply_product_by_inverse() {
         let m_a = Matrix::new(
             4,
             vec![
@@ -737,6 +849,221 @@ mod tests {
         );
         let m_c = m_a * m_b;
 
-        assert_eq!(m_a_clone, m_c * m_b_clone.inverse().unwrap());
+        assert_eq!(m_a_clone, m_c * m_b_clone.inverse());
+    }
+
+    #[test]
+    fn matrix_create_translation_matrix() {
+        let tx = Transformation::Translate(5.0, -3.0, 2.0);
+        let p = Tuple::new_point(-3.0, 4.0, 5.0);
+        let want = Tuple::new_point(2.0, 1.0, 7.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_can_multiply_by_inverse_of_translation() {
+        let tx = Transformation::Translate(5.0, -3.0, 2.0);
+        let p = Tuple::new_point(-3.0, 4.0, 5.0);
+        let want = Tuple::new_point(-8.0, 7.0, 3.0);
+        let inverse = Matrix::transform(tx).inverse();
+        let got = inverse * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_translation_does_not_effect_vectors() {
+        let tx = Transformation::Translate(5.0, -3.0, 2.0);
+        let v = Tuple::new_vector(-3.0, 4.0, 5.0);
+        let want = Tuple::new_vector(-3.0, 4.0, 5.0);
+        let got = Matrix::transform(tx) * v;
+        assert_eq!(want, got);
+    }
+
+    #[test]
+    fn matrix_can_apply_scaling_to_point() {
+        let tx = Transformation::Scale(2.0, 3.0, 4.0);
+        let p = Tuple::new_point(-4.0, 6.0, 8.0);
+        let want = Tuple::new_point(-8.0, 18.0, 32.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_can_apply_scaling_to_vector() {
+        let tx = Transformation::Scale(2.0, 3.0, 4.0);
+        let v = Tuple::new_vector(-4.0, 6.0, 8.0);
+        let want = Tuple::new_vector(-8.0, 18.0, 32.0);
+        let got = Matrix::transform(tx) * v;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_can_multiply_by_inverse_of_scaling_matrix() {
+        let tx = Transformation::Scale(2.0, 3.0, 4.0);
+        let v = Tuple::new_vector(-4.0, 6.0, 8.0);
+        let want = Tuple::new_vector(-2.0, 2.0, 2.0);
+
+        let inverse = Matrix::transform(tx).inverse();
+        let got = inverse * v;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_reflection_is_scaling_by_a_negative_value() {
+        let tx = Transformation::Scale(-1.0, 1.0, 1.0);
+        let p = Tuple::new_point(2.0, 3.0, 4.0);
+        let want = Tuple::new_point(-2.0, 3.0, 4.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_rotate_point_around_x_axis() {
+        let p1 = Tuple::new_point(0.0, 1.0, 0.0);
+        let p2 = Tuple::new_point(0.0, 1.0, 0.0);
+        let tx_half_quarter = Transformation::RotateX(PI / 4.0);
+        let tx_full_quarter = Transformation::RotateX(PI / 2.0);
+
+        let want1 = Tuple::new_point(0.0, (2.0 as f64).sqrt() / 2.0, (2.0 as f64).sqrt() / 2.0);
+        let want2 = Tuple::new_point(0.0, 0.0, 1.0);
+
+        let got1 = Matrix::transform(tx_half_quarter) * p1;
+        let got2 = Matrix::transform(tx_full_quarter) * p2;
+
+        assert_eq!(got1, want1);
+        assert_eq!(got2, want2);
+    }
+
+    #[test]
+    fn matrix_inverse_x_rotation_rotates_opposite_direction() {
+        let p = Tuple::new_point(0.0, 1.0, 0.0);
+        let tx = Transformation::RotateX(PI / 4.0);
+        let inv = Matrix::transform(tx).inverse();
+        let want = Tuple::new_point(0.0, (2.0 as f64).sqrt() / 2.0, -((2.0 as f64).sqrt() / 2.0));
+        let got = inv * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_rotate_point_around_y_axis() {
+        let p1 = Tuple::new_point(0.0, 0.0, 1.0);
+        let p2 = Tuple::new_point(0.0, 0.0, 1.0);
+        let tx_half_quarter = Transformation::RotateY(PI / 4.0);
+        let tx_full_quarter = Transformation::RotateY(PI / 2.0);
+
+        let want1 = Tuple::new_point((2.0 as f64).sqrt() / 2.0, 0.0, (2.0 as f64).sqrt() / 2.0);
+        let want2 = Tuple::new_point(1.0, 0.0, 0.0);
+
+        let got1 = Matrix::transform(tx_half_quarter) * p1;
+        let got2 = Matrix::transform(tx_full_quarter) * p2;
+
+        assert_eq!(got1, want1);
+        assert_eq!(got2, want2);
+    }
+
+    #[test]
+    fn matrix_rotate_point_around_z_axis() {
+        let p1 = Tuple::new_point(0.0, 1.0, 0.0);
+        let p2 = Tuple::new_point(0.0, 1.0, 0.0);
+        let tx_half_quarter = Transformation::RotateZ(PI / 4.0);
+        let tx_full_quarter = Transformation::RotateZ(PI / 2.0);
+
+        let want1 = Tuple::new_point(-((2.0 as f64).sqrt()) / 2.0, (2.0 as f64).sqrt() / 2.0, 0.0);
+        let want2 = Tuple::new_point(-1.0, 0.0, 0.0);
+
+        let got1 = Matrix::transform(tx_half_quarter) * p1;
+        let got2 = Matrix::transform(tx_full_quarter) * p2;
+
+        assert_eq!(got1, want1);
+        assert_eq!(got2, want2);
+    }
+
+    #[test]
+    fn matrix_shear_point_x_y() {
+        let tx = Transformation::Shear(1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let p = Tuple::new_point(2.0, 3.0, 4.0);
+        let want = Tuple::new_point(5.0, 3.0, 4.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_shear_point_x_z() {
+        let tx = Transformation::Shear(0.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+        let p = Tuple::new_point(2.0, 3.0, 4.0);
+        let want = Tuple::new_point(6.0, 3.0, 4.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_shear_point_y_x() {
+        let tx = Transformation::Shear(0.0, 0.0, 1.0, 0.0, 0.0, 0.0);
+        let p = Tuple::new_point(2.0, 3.0, 4.0);
+        let want = Tuple::new_point(2.0, 5.0, 4.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_shear_point_y_z() {
+        let tx = Transformation::Shear(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+        let p = Tuple::new_point(2.0, 3.0, 4.0);
+        let want = Tuple::new_point(2.0, 7.0, 4.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_shear_point_z_x() {
+        let tx = Transformation::Shear(0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+        let p = Tuple::new_point(2.0, 3.0, 4.0);
+        let want = Tuple::new_point(2.0, 3.0, 6.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_shear_point_z_y() {
+        let tx = Transformation::Shear(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+        let p = Tuple::new_point(2.0, 3.0, 4.0);
+        let want = Tuple::new_point(2.0, 3.0, 7.0);
+        let got = Matrix::transform(tx) * p;
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn matrix_can_apply_multiple_transforms_in_sequence() {
+        let p = Tuple::new_point(1.0, 0.0, 1.0);
+        let tx_a = Matrix::transform(Transformation::RotateX(PI / 2.0));
+        let tx_b = Matrix::transform(Transformation::Scale(5.0, 5.0, 5.0));
+        let tx_c = Matrix::transform(Transformation::Translate(10.0, 5.0, 7.0));
+
+        let p2 = tx_a * p;
+        let want1 = Tuple::new_point(1.0, -1.0, 0.0);
+        assert_eq!(&want1, &p2);
+
+        let p3 = tx_b * p2;
+        let want2 = Tuple::new_point(5.0, -5.0, 0.0);
+        assert_eq!(&want2, &p3);
+
+        let p4 = tx_c * p3;
+        let want3 = Tuple::new_point(15.0, 0.0, 7.0);
+        assert_eq!(want3, p4);
+    }
+
+    #[test]
+    fn matrix_can_apply_chained_transforms() {
+        let p = Tuple::new_point(1.0, 0.0, 1.0);
+        let tx_a = Transformation::RotateX(PI / 2.0);
+        let tx_b = Transformation::Scale(5.0, 5.0, 5.0);
+        let tx_c = Transformation::Translate(10.0, 5.0, 7.0);
+
+        let tx = Matrix::transform_chain(&[tx_a, tx_b, tx_c]);
+
+        let got = tx * p;
+        let want = Tuple::new_point(15.0, 0.0, 7.0);
+        assert_eq!(want, got);
     }
 }
