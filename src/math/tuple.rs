@@ -1,5 +1,5 @@
 use super::float_equal;
-use std::ops;
+use std::ops::{self, Index};
 
 #[derive(Debug)]
 pub enum TupleType {
@@ -160,6 +160,20 @@ impl PartialEq for Tuple {
             && float_equal(self.y, other.y)
             && float_equal(self.z, other.z)
             && float_equal(self.w, other.w))
+    }
+}
+
+impl Index<usize> for Tuple {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            3 => &self.w,
+            _ => &0.0,
+        }
     }
 }
 
