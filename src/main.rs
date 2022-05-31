@@ -1,5 +1,6 @@
 mod draw;
 mod math;
+mod render;
 
 use draw::{canvas::*, color::*};
 use math::tuple::*;

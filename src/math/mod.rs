@@ -1,4 +1,5 @@
 pub mod matrix;
+pub mod ray;
 pub mod tuple;
 
 static EPSILON: f64 = 0.00001;
