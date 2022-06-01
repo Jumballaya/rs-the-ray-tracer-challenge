@@ -7,6 +7,7 @@ use super::{float_equal, tuple::Tuple};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Transformation {
+    None,                                // Identity Matrix
     Translate(f64, f64, f64),            // Move by (x,y,z)
     Scale(f64, f64, f64),                // Scale by (x,y,z)
     RotateX(f64),                        // Rotate by (radians) in X axis
@@ -15,7 +16,7 @@ pub enum Transformation {
     Shear(f64, f64, f64, f64, f64, f64), // Shear by (x:y, x:z, y:x, y:z, z:x, z:y)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Matrix {
     pub size: usize,
     data: Vec<Vec<f64>>,
@@ -138,6 +139,7 @@ impl Matrix {
 
     pub fn transform(tform: Transformation) -> Matrix {
         match tform {
+            Transformation::None => Matrix::identity_matrix(4),
             Transformation::Translate(x, y, z) => Matrix {
                 size: 4,
                 data: vec![
@@ -315,6 +317,22 @@ impl Mul<Matrix> for Tuple {
 
     fn mul(self, rhs: Matrix) -> Self::Output {
         rhs * self
+    }
+}
+
+impl Mul<&Matrix> for Tuple {
+    type Output = Tuple;
+
+    fn mul(self, rhs: &Matrix) -> Self::Output {
+        let mut vals = [0.0; 4];
+
+        for row in 0..rhs.size {
+            for col in 0..rhs.size {
+                vals[row] += rhs[row][col] * self[col];
+            }
+        }
+
+        Tuple::from(vals[0], vals[1], vals[2], vals[3])
     }
 }
 
