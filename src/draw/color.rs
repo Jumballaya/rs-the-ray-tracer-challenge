@@ -3,7 +3,7 @@ use std::ops;
 
 use crate::math::float_equal;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Color {
     r: f64,
     g: f64,
@@ -65,7 +65,39 @@ impl ops::Mul<Color> for Color {
     }
 }
 
+impl ops::Mul<&Color> for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: &Color) -> Self::Output {
+        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
+    }
+}
+
+impl ops::Mul<Color> for &Color {
+    type Output = Color;
+
+    fn mul(self, rhs: Color) -> Self::Output {
+        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
+    }
+}
+
+impl ops::Mul<&Color> for &Color {
+    type Output = Color;
+
+    fn mul(self, rhs: &Color) -> Self::Output {
+        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
+    }
+}
+
 impl ops::Mul<f64> for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Color::new(self.r * rhs, self.g * rhs, self.b * rhs)
+    }
+}
+
+impl ops::Mul<f64> for &Color {
     type Output = Color;
 
     fn mul(self, rhs: f64) -> Self::Output {

@@ -2,14 +2,17 @@ use std::sync::atomic::Ordering;
 
 use super::{Object, ObjectType, OBJECT_COUNTER};
 use crate::math::matrix::{Matrix, Transformation};
+use crate::math::tuple::TupleType;
 use crate::math::{ray::Ray, tuple::Tuple};
 use crate::render::hit::{Hittable, Intersection};
+use crate::render::material::Material;
 
 #[derive(Debug, Clone)]
 pub struct Sphere {
     id: usize,
     tp: ObjectType,
     pub transform: Matrix,
+    pub material: Material,
 }
 
 impl Sphere {
@@ -18,6 +21,7 @@ impl Sphere {
             id: OBJECT_COUNTER.fetch_add(1, Ordering::SeqCst),
             tp: ObjectType::Sphere,
             transform: Matrix::identity_matrix(4),
+            material: Material::default(),
         }
     }
 
@@ -26,8 +30,21 @@ impl Sphere {
         self.transform = m;
     }
 
-    pub fn normal_at(&self, point: Tuple) -> Tuple {
-        (point - Tuple::new_point(0.0, 0.0, 0.0)).normalize()
+    pub fn normal_at(&self, world_point: &Tuple) -> Tuple {
+        let object_point = self.transform.inverse() * world_point;
+        let object_normal = object_point - Tuple::new_point(0.0, 0.0, 0.0);
+        let mut world_normal = self.transform.inverse().transpose() * object_normal;
+        world_normal.w = 0.0;
+        world_normal.tp = TupleType::Vector;
+        world_normal.normalize()
+    }
+
+    pub fn get_material(&self) -> &Material {
+        &self.material
+    }
+
+    pub fn set_material(&mut self, material: Material) {
+        self.material = material;
     }
 }
 
@@ -40,8 +57,8 @@ impl Hittable for Sphere {
         self.tp
     }
 
-    fn intersect(self, ray: Ray) -> Vec<Intersection> {
-        let tformed_ray = ray.transform(&self.clone().transform.inverse());
+    fn intersect(&self, ray: Ray) -> Vec<Intersection> {
+        let tformed_ray = ray.transform(&self.transform.inverse());
         let sphere_to_ray = tformed_ray.origin - Tuple::new_point(0.0, 0.0, 0.0);
         let a = tformed_ray.direction * tformed_ray.direction;
         let b = 2.0 * (tformed_ray.direction * sphere_to_ray);
@@ -52,9 +69,8 @@ impl Hittable for Sphere {
         }
         let hit1 = (-b - (discriminant.sqrt())) / (2.0 * a);
         let hit2 = (-b + (discriminant.sqrt())) / (2.0 * a);
-        let s_clone = self.clone();
-        let intersection1 = Intersection::new(Object::Sphere(self), hit1);
-        let intersection2 = Intersection::new(Object::Sphere(s_clone), hit2);
+        let intersection1 = Intersection::new(Object::Sphere(self.clone()), hit1);
+        let intersection2 = Intersection::new(Object::Sphere(self.clone()), hit2);
         vec![intersection1, intersection2]
     }
 }
@@ -67,14 +83,17 @@ impl PartialEq for Sphere {
 
 #[cfg(test)]
 mod test {
+    use std::borrow::Borrow;
+
     use crate::{
+        draw::color::Color,
         math::{
             float_equal,
             matrix::{Matrix, Transformation},
             ray::Ray,
             tuple::Tuple,
         },
-        render::hit::Hittable,
+        render::{hit::Hittable, material::Material},
     };
 
     use super::Sphere;
@@ -167,7 +186,7 @@ mod test {
         let s = Sphere::new();
         let p = Tuple::new_point(1.0, 0.0, 0.0);
         let want = Tuple::new_vector(1.0, 0.0, 0.0);
-        let got = s.normal_at(p);
+        let got = s.normal_at(&p);
         assert_eq!(got, want);
     }
 
@@ -176,7 +195,7 @@ mod test {
         let s = Sphere::new();
         let p = Tuple::new_point(0.0, 1.0, 0.0);
         let want = Tuple::new_vector(0.0, 1.0, 0.0);
-        let got = s.normal_at(p);
+        let got = s.normal_at(&p);
         assert_eq!(got, want);
     }
 
@@ -185,7 +204,7 @@ mod test {
         let s = Sphere::new();
         let p = Tuple::new_point(0.0, 0.0, 1.0);
         let want = Tuple::new_vector(0.0, 0.0, 1.0);
-        let got = s.normal_at(p);
+        let got = s.normal_at(&p);
         assert_eq!(got, want);
     }
 
@@ -195,7 +214,7 @@ mod test {
         let s = Sphere::new();
         let p = Tuple::new_point(root_3_3, root_3_3, root_3_3);
         let want = Tuple::new_vector(root_3_3, root_3_3, root_3_3);
-        let got = s.normal_at(p);
+        let got = s.normal_at(&p);
         assert_eq!(got, want);
     }
 
@@ -205,7 +224,30 @@ mod test {
         let s = Sphere::new();
         let p = Tuple::new_point(root_3_3, root_3_3, root_3_3);
         let want = Tuple::new_vector(root_3_3, root_3_3, root_3_3).normalize();
-        let got = s.normal_at(p);
+        let got = s.normal_at(&p);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn sphere_compute_the_normal_on_a_translated_sphere() {
+        let mut s = Sphere::new();
+        let translate = Transformation::Translate(0.0, 1.0, 0.0);
+        s.set_transform(translate);
+    }
+
+    #[test]
+    fn sphere_has_default_material() {
+        let s = Sphere::new();
+        assert_eq!(s.get_material(), Material::default());
+    }
+
+    #[test]
+    fn sphere_may_be_assigned_a_material() {
+        let mut s = Sphere::new();
+        let m = Material::new(Color::new(0.0, 0.0, 0.0), 1.0, 0.9, 0.9, 200.0);
+        s.set_material(m);
+        let want = Material::new(Color::new(0.0, 0.0, 0.0), 1.0, 0.9, 0.9, 200.0);
+        let got = s.get_material();
         assert_eq!(got, want);
     }
 }

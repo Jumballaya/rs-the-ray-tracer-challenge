@@ -6,7 +6,7 @@ use super::{
 pub trait Hittable {
     fn get_type(&self) -> ObjectType;
     fn get_id(&self) -> usize;
-    fn intersect(self, ray: Ray) -> Vec<Intersection>;
+    fn intersect(&self, ray: Ray) -> Vec<Intersection>;
 }
 
 impl PartialEq for dyn Hittable {
@@ -20,7 +20,7 @@ pub struct Intersection {
     pub object: Object,
 }
 
-impl Intersection {
+impl<'a> Intersection {
     pub fn new(object: Object, t: f64) -> Self {
         Intersection { t, object }
     }
@@ -32,7 +32,7 @@ impl Intersection {
         if pos_ints.len() > 0 {
             return Some(pos_ints[0]);
         }
-        return None;
+        None
     }
 }
 
@@ -58,7 +58,7 @@ mod test {
     #[test]
     fn hit_intersect_sets_object_on_intersection() {
         let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
-        let s = Sphere::new();
+        let s = &Sphere::new();
         let s_copy = s.clone();
         let xs = s.intersect(r);
         assert!(xs.len() == 2);
@@ -69,11 +69,9 @@ mod test {
     #[test]
     fn hit_hit_when_all_intersections_have_positive_t() {
         let s = Sphere::new();
-        let s_copy1 = s.clone();
-        let s_copy2 = s.clone();
-        let i1 = Intersection::new(Object::Sphere(s), 1.0);
-        let i1_c = Intersection::new(Object::Sphere(s_copy1), 1.0);
-        let i2 = Intersection::new(Object::Sphere(s_copy2), 2.0);
+        let i1 = Intersection::new(Object::Sphere(s.clone()), 1.0);
+        let i1_c = Intersection::new(Object::Sphere(s.clone()), 1.0);
+        let i2 = Intersection::new(Object::Sphere(s), 2.0);
         if let Some(hit) = Intersection::get_hit(&[i1, i2]) {
             assert!(hit.t == i1_c.t);
             assert!(hit.object.get_id() == i1_c.object.get_id());
@@ -85,9 +83,8 @@ mod test {
     #[test]
     fn hit_hit_when_some_intersections_have_negative_t() {
         let s = Sphere::new();
-        let s_copy = s.clone();
-        let i1 = Intersection::new(Object::Sphere(s), -2.0);
-        let i2 = Intersection::new(Object::Sphere(s_copy), -1.0);
+        let i1 = Intersection::new(Object::Sphere(s.clone()), -2.0);
+        let i2 = Intersection::new(Object::Sphere(s), -1.0);
         if let None = Intersection::get_hit(&[i1, i2]) {
             assert!(true);
         } else {
@@ -98,15 +95,11 @@ mod test {
     #[test]
     fn hit_hit_is_lowest_non_negative() {
         let s = Sphere::new();
-        let s_copy1 = s.clone();
-        let s_copy2 = s.clone();
-        let s_copy3 = s.clone();
-        let s_copy4 = s.clone();
-        let i1 = Intersection::new(Object::Sphere(s), 5.0);
-        let i2 = Intersection::new(Object::Sphere(s_copy1), 7.0);
-        let i3 = Intersection::new(Object::Sphere(s_copy2), -3.0);
-        let i4 = Intersection::new(Object::Sphere(s_copy3), 2.0);
-        let i4_c = Intersection::new(Object::Sphere(s_copy4), 2.0);
+        let i1 = Intersection::new(Object::Sphere(s.clone()), 5.0);
+        let i2 = Intersection::new(Object::Sphere(s.clone()), 7.0);
+        let i3 = Intersection::new(Object::Sphere(s.clone()), -3.0);
+        let i4 = Intersection::new(Object::Sphere(s.clone()), 2.0);
+        let i4_c = Intersection::new(Object::Sphere(s), 2.0);
 
         if let Some(hit) = Intersection::get_hit(&[i1, i2, i3, i4]) {
             assert!(hit.t == i4_c.t);

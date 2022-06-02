@@ -81,6 +81,10 @@ impl Tuple {
         let z = (self.x * other.y) - (self.y * other.x);
         Tuple::new_vector(x, y, z)
     }
+
+    pub fn reflect(&self, other: &Tuple) -> Tuple {
+        self - other * 2.0 * self * other
+    }
 }
 
 impl ops::Add<Tuple> for Tuple {
@@ -96,6 +100,42 @@ impl ops::Add<Tuple> for Tuple {
 }
 
 impl ops::Sub<Tuple> for Tuple {
+    type Output = Tuple;
+
+    fn sub(self, rhs: Tuple) -> Self::Output {
+        let x = self.x - rhs.x;
+        let y = self.y - rhs.y;
+        let z = self.z - rhs.z;
+        let w = self.w - rhs.w;
+        Tuple::from(x, y, z, w)
+    }
+}
+
+impl ops::Sub<&Tuple> for &Tuple {
+    type Output = Tuple;
+
+    fn sub(self, rhs: &Tuple) -> Self::Output {
+        let x = self.x - rhs.x;
+        let y = self.y - rhs.y;
+        let z = self.z - rhs.z;
+        let w = self.w - rhs.w;
+        Tuple::from(x, y, z, w)
+    }
+}
+
+impl ops::Sub<&Tuple> for Tuple {
+    type Output = Tuple;
+
+    fn sub(self, rhs: &Tuple) -> Self::Output {
+        let x = self.x - rhs.x;
+        let y = self.y - rhs.y;
+        let z = self.z - rhs.z;
+        let w = self.w - rhs.w;
+        Tuple::from(x, y, z, w)
+    }
+}
+
+impl ops::Sub<Tuple> for &Tuple {
     type Output = Tuple;
 
     fn sub(self, rhs: Tuple) -> Self::Output {
@@ -135,6 +175,30 @@ impl ops::Mul<Tuple> for Tuple {
     }
 }
 
+impl ops::Mul<&Tuple> for &Tuple {
+    type Output = f64;
+
+    fn mul(self, rhs: &Tuple) -> Self::Output {
+        (self.x * rhs.x) + (self.y * rhs.y) + (self.z * rhs.z) + (self.w * rhs.w)
+    }
+}
+
+impl ops::Mul<Tuple> for &Tuple {
+    type Output = f64;
+
+    fn mul(self, rhs: Tuple) -> Self::Output {
+        (self.x * rhs.x) + (self.y * rhs.y) + (self.z * rhs.z) + (self.w * rhs.w)
+    }
+}
+
+impl ops::Mul<&Tuple> for Tuple {
+    type Output = f64;
+
+    fn mul(self, rhs: &Tuple) -> Self::Output {
+        (self.x * rhs.x) + (self.y * rhs.y) + (self.z * rhs.z) + (self.w * rhs.w)
+    }
+}
+
 impl ops::Mul<f64> for Tuple {
     type Output = Tuple;
 
@@ -144,6 +208,26 @@ impl ops::Mul<f64> for Tuple {
         let z = self.z * rhs;
         let w = self.w * rhs;
         Tuple::from(x, y, z, w)
+    }
+}
+
+impl ops::Mul<f64> for &Tuple {
+    type Output = Tuple;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        let x = self.x * rhs;
+        let y = self.y * rhs;
+        let z = self.z * rhs;
+        let w = self.w * rhs;
+        Tuple::from(x, y, z, w)
+    }
+}
+
+impl ops::Mul<&Tuple> for f64 {
+    type Output = Tuple;
+
+    fn mul(self, rhs: &Tuple) -> Self::Output {
+        rhs * self
     }
 }
 
@@ -339,5 +423,24 @@ mod tests {
 
         assert_eq!(want1, got1);
         assert_eq!(want2, got2);
+    }
+
+    #[test]
+    fn tuple_reflecting_vector_approaching_45_deg() {
+        let v = Tuple::new_vector(1.0, -1.0, 0.0);
+        let n = Tuple::new_vector(0.0, 1.0, 0.0);
+        let got = v.reflect(&n);
+        let want = Tuple::new_vector(1.0, 1.0, 0.0);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn tuple_reflecting_vector_from_slanted_surface() {
+        let root_2_2 = (2.0 as f64).sqrt() / 2.0;
+        let v = Tuple::new_vector(0.0, -1.0, 0.0);
+        let n = Tuple::new_vector(root_2_2, root_2_2, 0.0);
+        let got = v.reflect(&n);
+        let want = Tuple::new_vector(1.0, 0.0, 0.0);
+        assert_eq!(got, want);
     }
 }

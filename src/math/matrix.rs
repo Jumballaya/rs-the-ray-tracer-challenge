@@ -116,9 +116,9 @@ impl Matrix {
         self.determinant() != 0.0
     }
 
-    pub fn inverse(self) -> Matrix {
+    pub fn inverse(&self) -> Matrix {
         if !self.is_invertible() {
-            return self;
+            return self.clone();
         }
         let mut data: Vec<Vec<f64>> = vec![];
         for i in 0..self.size {
@@ -300,6 +300,22 @@ impl Mul<Tuple> for Matrix {
     type Output = Tuple;
 
     fn mul(self, rhs: Tuple) -> Self::Output {
+        let mut vals = [0.0; 4];
+
+        for row in 0..self.size {
+            for col in 0..self.size {
+                vals[row] += self[row][col] * rhs[col];
+            }
+        }
+
+        Tuple::from(vals[0], vals[1], vals[2], vals[3])
+    }
+}
+
+impl Mul<&Tuple> for Matrix {
+    type Output = Tuple;
+
+    fn mul(self, rhs: &Tuple) -> Self::Output {
         let mut vals = [0.0; 4];
 
         for row in 0..self.size {

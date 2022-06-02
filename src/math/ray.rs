@@ -1,6 +1,6 @@
 use super::{matrix::Matrix, tuple::Tuple};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Ray {
     pub origin: Tuple,    // Point
     pub direction: Tuple, // Vector
