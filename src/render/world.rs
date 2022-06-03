@@ -263,7 +263,7 @@ mod test {
 
     #[test]
     fn world_shade_hit_is_given_an_intersection_in_shadow() {
-        let mut w = default_world();
+        let mut w = World::new(1, 1, 1.0);
         w.add_light(Light::Point(PointLight::new(
             Tuple::new_point(0.0, 0.0, -10.0),
             Color::new(1.0, 1.0, 1.0),
@@ -275,7 +275,7 @@ mod test {
         w.add_object(Object::Sphere(s1));
         w.add_object(Object::Sphere(s2));
 
-        let ray = Ray::new((0.0, 0.0, 5.0), (0.0, 0.0, -1.0));
+        let ray = Ray::new((0.0, 0.0, 5.0), (0.0, 0.0, 1.0));
         let intersection = Intersection::new(Object::Sphere(s2_c), 4.0);
 
         let comp = Intersection::prepare_computation(&intersection, &ray);
