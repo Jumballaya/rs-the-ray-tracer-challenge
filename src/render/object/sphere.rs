@@ -156,7 +156,7 @@ mod test {
     fn sphere_change_spheres_tform() {
         let mut s = Sphere::new();
         let translate = Transformation::Translate(2.0, 3.0, 4.0);
-        s.set_transform(translate);
+        s.set_transform(translate.clone());
         assert_eq!(s.transform, Matrix::transform(translate));
     }
 

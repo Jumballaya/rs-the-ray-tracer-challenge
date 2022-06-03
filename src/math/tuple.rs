@@ -62,6 +62,10 @@ impl Tuple {
         (self.x, self.y, self.z, self.w)
     }
 
+    pub fn as_tuple_3(&self) -> (f64, f64, f64) {
+        (self.x, self.y, self.z)
+    }
+
     pub fn magnitude(&self) -> f64 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2) + self.w.powi(2)).sqrt()
     }

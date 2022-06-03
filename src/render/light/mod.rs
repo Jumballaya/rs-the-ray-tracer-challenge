@@ -31,15 +31,22 @@ impl Light {
         }
     }
 
+    pub fn get_position(&self) -> Tuple {
+        match self {
+            Self::Point(p) => p.position,
+        }
+    }
+
     pub fn lighting(
         &self,
         material: &Material,
         point: Tuple,
         eye_vector: Tuple,
         normal_vector: Tuple,
+        in_shadow: bool,
     ) -> Color {
         match self {
-            Self::Point(p) => p.lighting(material, point, eye_vector, normal_vector),
+            Self::Point(p) => p.lighting(material, point, eye_vector, normal_vector, in_shadow),
         }
     }
 }

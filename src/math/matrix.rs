@@ -5,7 +5,7 @@ use std::{
 
 use super::{float_equal, tuple::Tuple};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Transformation {
     None,                                // Identity Matrix
     Translate(f64, f64, f64),            // Move by (x,y,z)
@@ -15,6 +15,7 @@ pub enum Transformation {
     RotateZ(f64),                        // Rotate by (radians) in X axis
     Shear(f64, f64, f64, f64, f64, f64), // Shear by (x:y, x:z, y:x, y:z, z:x, z:y)
     View(Tuple, Tuple, Tuple), // Transform camera view by (from (point), to (point), up(vector))
+    Chain(Vec<Transformation>), // Vec of Transformations to be apply in reverse order
 }
 
 #[derive(Debug, Clone)]
@@ -213,16 +214,23 @@ impl Matrix {
                 orientation
                     * Matrix::transform(Transformation::Translate(-from.x, -from.y, -from.z))
             }
+            Transformation::Chain(chain) => Matrix::transform_chain(&chain),
         }
     }
 
     pub fn transform_chain(tforms: &[Transformation]) -> Matrix {
-        let mut m = Matrix::identity_matrix(4);
-        for i in 0..tforms.len() {
-            let t = tforms[tforms.len() - i - 1];
-            m = m * Matrix::transform(t);
+        let m = tforms
+            .to_vec()
+            .iter()
+            .rev()
+            .cloned()
+            .map(|tform| Matrix::transform(tform))
+            .reduce(|acc, cur| acc * cur);
+        if let Some(matrix) = m {
+            return matrix;
+        } else {
+            return Matrix::identity_matrix(4);
         }
-        m
     }
 
     pub fn identity_matrix(size: usize) -> Matrix {

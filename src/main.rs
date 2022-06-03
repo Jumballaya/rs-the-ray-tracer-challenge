@@ -106,8 +106,8 @@ fn create_light() -> Light {
 }
 
 fn main() -> std::io::Result<()> {
-    let width: usize = 100;
-    let height: usize = 100;
+    let width: usize = 500;
+    let height: usize = 500;
     let field_of_view = PI / 3.0;
 
     let floor = create_floor();

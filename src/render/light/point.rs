@@ -1,10 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use crate::{
-    draw::color::Color,
-    math::{tuple::Tuple, EPSILON},
-    render::material::Material,
-};
+use crate::{draw::color::Color, math::tuple::Tuple, render::material::Material};
 
 use super::{LightType, LIGHT_COUNTER};
 
@@ -39,6 +35,7 @@ impl PointLight {
         point: Tuple,
         eye_vector: Tuple,
         normal_vector: Tuple,
+        in_shadow: bool,
     ) -> Color {
         let effective_color = material.color * self.intensity;
         let light_vector = (self.position - point).normalize();
@@ -48,11 +45,11 @@ impl PointLight {
         let mut specular = Color::new(0.0, 0.0, 0.0);
         let mut diffuse = Color::new(0.0, 0.0, 0.0);
 
-        if !(light_dot_normal < 0.0) {
+        if !(light_dot_normal < 0.0) && !in_shadow {
             diffuse = effective_color * material.diffuse * light_dot_normal;
             let reflect_vector = -light_vector.reflect(&normal_vector);
             let reflect_dot_eye = reflect_vector * eye_vector;
-            if !(reflect_dot_eye < (0.0 + EPSILON)) {
+            if !(reflect_dot_eye < 0.0) {
                 let factor = reflect_dot_eye.powf(material.shininess);
                 specular = self.intensity * material.specular * factor;
             }

@@ -1,4 +1,4 @@
-use crate::math::tuple::Tuple;
+use crate::math::{tuple::Tuple, EPSILON};
 
 use super::{super::math::ray::Ray, object::Object};
 
@@ -13,8 +13,10 @@ pub struct HitComputation<'a> {
     pub eye_vector: Tuple,
     pub normal_vector: Tuple,
     pub inside: bool,
+    pub over_point: Tuple,
 }
 
+#[derive(Debug)]
 pub struct Intersection {
     pub t: f64,
     pub object: Object,
@@ -54,6 +56,8 @@ impl Intersection {
             }
         };
 
+        let over_point = point + normal_vector * EPSILON;
+
         HitComputation {
             t,
             object,
@@ -61,6 +65,7 @@ impl Intersection {
             eye_vector,
             normal_vector,
             inside,
+            over_point,
         }
     }
 
@@ -80,9 +85,12 @@ impl Intersection {
 mod test {
 
     use super::*;
-    use crate::render::{
-        hit::Intersection,
-        object::{sphere::Sphere, Object},
+    use crate::{
+        math::{matrix::Transformation, EPSILON},
+        render::{
+            hit::Intersection,
+            object::{sphere::Sphere, Object},
+        },
     };
 
     #[test]
@@ -182,5 +190,17 @@ mod test {
         assert_eq!(comp.eye_vector, Tuple::new_vector(0.0, 0.0, -1.0));
         assert_eq!(comp.normal_vector, Tuple::new_vector(0.0, 0.0, -1.0));
         assert!(comp.inside);
+    }
+
+    #[test]
+    fn hit_should_offset_the_point() {
+        let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
+        let mut s = Sphere::new();
+        s.set_transform(Transformation::Translate(0.0, 0.0, 1.0));
+        let intersection = Intersection::new(Object::Sphere(s), 5.0);
+        let comp = Intersection::prepare_computation(&intersection, &r);
+
+        assert!(comp.over_point.z < -EPSILON / 2.0);
+        assert!(comp.point.z > comp.over_point.z);
     }
 }

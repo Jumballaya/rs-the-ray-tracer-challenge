@@ -21,6 +21,10 @@ impl Color {
         let blue = ((self.b * 255.0) as u8).max(0).min(255);
         (red, green, blue)
     }
+
+    pub fn as_tuple(&self) -> (f64, f64, f64) {
+        (self.r, self.g, self.b)
+    }
 }
 
 impl Display for Color {

@@ -61,7 +61,15 @@ impl PartialEq<Material> for &Material {
 
 #[cfg(test)]
 mod test {
-    use crate::{draw::color::Color, math::tuple::Tuple, render::light::point::PointLight};
+    use crate::{
+        draw::color::Color,
+        math::{matrix::Transformation, tuple::Tuple},
+        render::{
+            light::{point::PointLight, Light},
+            object::{sphere::Sphere, Object},
+            world::World,
+        },
+    };
 
     use super::Material;
 
@@ -76,19 +84,19 @@ mod test {
     }
 
     #[test]
-    fn light_with_eye_between_light_and_surface() {
+    fn material_with_eye_between_light_and_surface() {
         let m = Material::default();
         let pos = Tuple::new_point(0.0, 0.0, 0.0);
         let eye_vector = Tuple::new_vector(0.0, 0.0, -1.0);
         let normal_vector = Tuple::new_vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::new_point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
-        let got = light.lighting(&m, pos, eye_vector, normal_vector);
+        let got = light.lighting(&m, pos, eye_vector, normal_vector, false);
         let want = Color::new(1.9, 1.9, 1.9);
         assert_eq!(got, want);
     }
 
     #[test]
-    fn light_with_eye_between_light_and_surface_eye_offset_45_deg() {
+    fn material_with_eye_between_light_and_surface_eye_offset_45_deg() {
         let m = Material::default();
         let pos = Tuple::new_point(0.0, 0.0, 0.0);
 
@@ -97,13 +105,13 @@ mod test {
         let eye_vector = Tuple::new_vector(0.0, root_2_2, -root_2_2);
         let normal_vector = Tuple::new_vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::new_point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
-        let got = light.lighting(&m, pos, eye_vector, normal_vector);
+        let got = light.lighting(&m, pos, eye_vector, normal_vector, false);
         let want = Color::new(1.0, 1.0, 1.0);
         assert_eq!(got, want);
     }
 
     #[test]
-    fn light_with_eye_opposite_surface_light_offset_45_deg() {
+    fn material_with_eye_opposite_surface_light_offset_45_deg() {
         let m = Material::default();
         let pos = Tuple::new_point(0.0, 0.0, 0.0);
         let eye_vector = Tuple::new_vector(0.0, 0.0, -1.0);
@@ -112,13 +120,13 @@ mod test {
             Tuple::new_point(0.0, 10.0, -10.0),
             Color::new(1.0, 1.0, 1.0),
         );
-        let got = light.lighting(&m, pos, eye_vector, normal_vector);
+        let got = light.lighting(&m, pos, eye_vector, normal_vector, false);
         let want = Color::new(0.7364, 0.7364, 0.7364);
         assert_eq!(got, want);
     }
 
     #[test]
-    fn light_with_eye_in_path_of_reflection_vector() {
+    fn material_with_eye_in_path_of_reflection_vector() {
         let m = Material::default();
         let pos = Tuple::new_point(0.0, 0.0, 0.0);
 
@@ -130,19 +138,32 @@ mod test {
             Tuple::new_point(0.0, 10.0, -10.0),
             Color::new(1.0, 1.0, 1.0),
         );
-        let got = light.lighting(&m, pos, eye_vector, normal_vector);
+        let got = light.lighting(&m, pos, eye_vector, normal_vector, false);
         let want = Color::new(1.6364, 1.6364, 1.6364);
         assert_eq!(got, want);
     }
 
     #[test]
-    fn light_with_light_behind_surface() {
+    fn material_with_light_behind_surface() {
         let m = Material::default();
         let pos = Tuple::new_point(0.0, 0.0, 0.0);
         let eye_vector = Tuple::new_vector(0.0, 0.0, -1.0);
         let normal_vector = Tuple::new_vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::new_point(0.0, 0.0, 10.0), Color::new(1.0, 1.0, 1.0));
-        let got = light.lighting(&m, pos, eye_vector, normal_vector);
+        let got = light.lighting(&m, pos, eye_vector, normal_vector, true);
+        let want = Color::new(0.1, 0.1, 0.1);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn material_lighting_with_surface_in_shadow() {
+        let m = Material::default();
+        let point = Tuple::new_point(0.0, 0.0, 0.0);
+        let eye_vector = Tuple::new_vector(0.0, 0.0, -1.0);
+        let normal_vector = Tuple::new_vector(0.0, 0.0, -1.0);
+        let light = PointLight::new(Tuple::new_point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
+        let in_shadow = true;
+        let got = light.lighting(&m, point, eye_vector, normal_vector, in_shadow);
         let want = Color::new(0.1, 0.1, 0.1);
         assert_eq!(got, want);
     }

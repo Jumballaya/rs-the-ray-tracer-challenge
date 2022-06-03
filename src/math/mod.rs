@@ -2,7 +2,7 @@ pub mod matrix;
 pub mod ray;
 pub mod tuple;
 
-pub static EPSILON: f64 = 0.00001;
+pub static EPSILON: f64 = 0.000001;
 
 pub fn round(a: f64) -> f64 {
     (a * 100000.0).round() / 100000.0
