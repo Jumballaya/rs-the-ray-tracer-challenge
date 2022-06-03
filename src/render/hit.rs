@@ -1,18 +1,18 @@
-use super::{
-    super::math::ray::Ray,
-    object::{Object, ObjectType},
-};
+use crate::math::tuple::Tuple;
+
+use super::{super::math::ray::Ray, object::Object};
 
 pub trait Hittable {
-    fn get_type(&self) -> ObjectType;
-    fn get_id(&self) -> usize;
-    fn intersect(&self, ray: Ray) -> Vec<Intersection>;
+    fn intersect(&self, ray: &Ray) -> Vec<Intersection>;
 }
 
-impl PartialEq for dyn Hittable {
-    fn eq(&self, other: &Self) -> bool {
-        self.get_type() == other.get_type() && self.get_id() == other.get_id()
-    }
+pub struct HitComputation<'a> {
+    pub t: f64,
+    pub object: &'a Object,
+    pub point: Tuple,
+    pub eye_vector: Tuple,
+    pub normal_vector: Tuple,
+    pub inside: bool,
 }
 
 pub struct Intersection {
@@ -20,19 +20,58 @@ pub struct Intersection {
     pub object: Object,
 }
 
-impl<'a> Intersection {
+impl Intersection {
     pub fn new(object: Object, t: f64) -> Self {
         Intersection { t, object }
     }
 
-    pub fn get_hit(intersections: &[Intersection]) -> Option<&Intersection> {
-        let mut pos_ints: Vec<&Intersection> =
+    pub fn get_hit<'a>(intersections: &'a Vec<Intersection>) -> Option<&'a Intersection> {
+        let mut pos_ints: Vec<&'a Intersection> =
             intersections.iter().filter(|int| int.t > 0.0).collect();
         pos_ints.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
         if pos_ints.len() > 0 {
             return Some(pos_ints[0]);
         }
         None
+    }
+
+    pub fn prepare_computation<'a>(
+        intersection: &'a Intersection,
+        ray: &Ray,
+    ) -> HitComputation<'a> {
+        let point = ray.position_at(intersection.t);
+        let eye_vector = -ray.direction;
+        let object = &intersection.object;
+        let t = intersection.t;
+
+        let (normal_vector, inside) = {
+            let normal_vector = intersection.object.normal_at(&point);
+            let normal_dot_eye = normal_vector * eye_vector;
+            if normal_dot_eye < 0.0 {
+                (-normal_vector, true)
+            } else {
+                (normal_vector, false)
+            }
+        };
+
+        HitComputation {
+            t,
+            object,
+            point,
+            eye_vector,
+            normal_vector,
+            inside,
+        }
+    }
+
+    pub fn prepare_computations<'a>(
+        intersections: &'a Vec<Intersection>,
+        ray: &Ray,
+    ) -> Vec<HitComputation<'a>> {
+        intersections
+            .iter()
+            .map(|intersection| Intersection::prepare_computation(intersection, ray))
+            .collect()
     }
 }
 
@@ -60,7 +99,7 @@ mod test {
         let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
         let s = &Sphere::new();
         let s_copy = s.clone();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert_eq!(xs[0].object.get_id(), s_copy.get_id());
         assert_eq!(xs[1].object.get_id(), s_copy.get_id());
@@ -72,7 +111,7 @@ mod test {
         let i1 = Intersection::new(Object::Sphere(s.clone()), 1.0);
         let i1_c = Intersection::new(Object::Sphere(s.clone()), 1.0);
         let i2 = Intersection::new(Object::Sphere(s), 2.0);
-        if let Some(hit) = Intersection::get_hit(&[i1, i2]) {
+        if let Some(hit) = Intersection::get_hit(&vec![i1, i2]) {
             assert!(hit.t == i1_c.t);
             assert!(hit.object.get_id() == i1_c.object.get_id());
         } else {
@@ -85,7 +124,7 @@ mod test {
         let s = Sphere::new();
         let i1 = Intersection::new(Object::Sphere(s.clone()), -2.0);
         let i2 = Intersection::new(Object::Sphere(s), -1.0);
-        if let None = Intersection::get_hit(&[i1, i2]) {
+        if let None = Intersection::get_hit(&vec![i1, i2]) {
             assert!(true);
         } else {
             assert!(false);
@@ -101,11 +140,47 @@ mod test {
         let i4 = Intersection::new(Object::Sphere(s.clone()), 2.0);
         let i4_c = Intersection::new(Object::Sphere(s), 2.0);
 
-        if let Some(hit) = Intersection::get_hit(&[i1, i2, i3, i4]) {
+        if let Some(hit) = Intersection::get_hit(&vec![i1, i2, i3, i4]) {
             assert!(hit.t == i4_c.t);
             assert!(hit.object.get_id() == i4_c.object.get_id());
         } else {
             assert!(false);
         }
+    }
+
+    #[test]
+    fn hit_precompute_state_of_intersection() {
+        let ray = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
+        let shape = Sphere::new();
+        let id = shape.get_id();
+        let intersection = Intersection::new(Object::Sphere(shape), 4.0);
+        let comp = Intersection::prepare_computation(&intersection, &ray);
+
+        assert_eq!(comp.t, intersection.t);
+        assert_eq!(comp.object.get_id(), id);
+        assert_eq!(comp.point, Tuple::new_point(0.0, 0.0, -1.0));
+        assert_eq!(comp.eye_vector, Tuple::new_vector(0.0, 0.0, -1.0));
+        assert_eq!(comp.normal_vector, Tuple::new_vector(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn hit_intersection_is_on_outside() {
+        let ray = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
+        let shape = Sphere::new();
+        let intersection = Intersection::new(Object::Sphere(shape), 4.0);
+        let comp = Intersection::prepare_computation(&intersection, &ray);
+        assert!(!comp.inside);
+    }
+
+    #[test]
+    fn hit_intersection_is_on_inside() {
+        let ray = Ray::new((0.0, 0.0, 0.0), (0.0, 0.0, 1.0));
+        let shape = Sphere::new();
+        let intersection = Intersection::new(Object::Sphere(shape), 1.0);
+        let comp = Intersection::prepare_computation(&intersection, &ray);
+        assert_eq!(comp.point, Tuple::new_point(0.0, 0.0, 1.0));
+        assert_eq!(comp.eye_vector, Tuple::new_vector(0.0, 0.0, -1.0));
+        assert_eq!(comp.normal_vector, Tuple::new_vector(0.0, 0.0, -1.0));
+        assert!(comp.inside);
     }
 }

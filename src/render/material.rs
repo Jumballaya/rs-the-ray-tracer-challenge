@@ -1,6 +1,6 @@
 use crate::{draw::color::Color, math::float_equal};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Material {
     pub color: Color,
     pub ambient: f64,

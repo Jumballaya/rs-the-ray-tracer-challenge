@@ -14,6 +14,7 @@ pub enum Transformation {
     RotateY(f64),                        // Rotate by (radians) in X axis
     RotateZ(f64),                        // Rotate by (radians) in X axis
     Shear(f64, f64, f64, f64, f64, f64), // Shear by (x:y, x:z, y:x, y:z, z:x, z:y)
+    View(Tuple, Tuple, Tuple), // Transform camera view by (from (point), to (point), up(vector))
 }
 
 #[derive(Debug, Clone)]
@@ -194,6 +195,24 @@ impl Matrix {
                     vec![0.0, 0.0, 0.0, 1.0],
                 ],
             },
+            Transformation::View(from, to, up) => {
+                let forward = (to - from).normalize();
+                let up_normal = up.normalize();
+                let left = forward.cross(&up_normal);
+                let true_up = left.cross(&forward);
+                let orientation = Matrix {
+                    size: 4,
+                    data: vec![
+                        vec![left.x, left.y, left.z, 0.0],
+                        vec![true_up.x, true_up.y, true_up.z, 0.0],
+                        vec![-forward.x, -forward.y, -forward.z, 0.0],
+                        vec![0.0, 0.0, 0.0, 1.0],
+                    ],
+                };
+
+                orientation
+                    * Matrix::transform(Transformation::Translate(-from.x, -from.y, -from.z))
+            }
         }
     }
 
@@ -312,6 +331,22 @@ impl Mul<Tuple> for Matrix {
     }
 }
 
+impl Mul<Tuple> for &Matrix {
+    type Output = Tuple;
+
+    fn mul(self, rhs: Tuple) -> Self::Output {
+        let mut vals = [0.0; 4];
+
+        for row in 0..self.size {
+            for col in 0..self.size {
+                vals[row] += self[row][col] * rhs[col];
+            }
+        }
+
+        Tuple::from(vals[0], vals[1], vals[2], vals[3])
+    }
+}
+
 impl Mul<&Tuple> for Matrix {
     type Output = Tuple;
 
@@ -329,6 +364,14 @@ impl Mul<&Tuple> for Matrix {
 }
 
 impl Mul<Matrix> for Tuple {
+    type Output = Tuple;
+
+    fn mul(self, rhs: Matrix) -> Self::Output {
+        rhs * self
+    }
+}
+
+impl Mul<Matrix> for &Tuple {
     type Output = Tuple;
 
     fn mul(self, rhs: Matrix) -> Self::Output {
@@ -1099,5 +1142,53 @@ mod tests {
         let got = tx * p;
         let want = Tuple::new_point(15.0, 0.0, 7.0);
         assert_eq!(want, got);
+    }
+
+    #[test]
+    fn matrix_transform_matrix_for_default_view_orientation() {
+        let from = Tuple::new_point(0.0, 0.0, 0.0);
+        let to = Tuple::new_point(0.0, 0.0, -1.0);
+        let up = Tuple::new_vector(0.0, 1.0, 0.0);
+        let tform = Transformation::View(from, to, up);
+        assert_eq!(Matrix::transform(tform), Matrix::identity_matrix(4));
+    }
+
+    #[test]
+    fn matrix_transform_view_looking_in_positive_z() {
+        let from = Tuple::new_point(0.0, 0.0, 0.0);
+        let to = Tuple::new_point(0.0, 0.0, 1.0);
+        let up = Tuple::new_vector(0.0, 1.0, 0.0);
+        let tform = Transformation::View(from, to, up);
+        let scale_tform = Transformation::Scale(-1.0, 1.0, -1.0);
+        assert_eq!(Matrix::transform(tform), Matrix::transform(scale_tform));
+    }
+
+    #[test]
+    fn matrix_view_transformation_moves_world() {
+        let from = Tuple::new_point(0.0, 0.0, 8.0);
+        let to = Tuple::new_point(0.0, 0.0, 1.0);
+        let up = Tuple::new_vector(0.0, 1.0, 0.0);
+        let tform = Transformation::View(from, to, up);
+        let translate_tform = Transformation::Translate(-1.0, 1.0, -1.0);
+        assert_eq!(Matrix::transform(tform), Matrix::transform(translate_tform));
+    }
+
+    #[test]
+    fn matrix_arbitrary_view_transformation() {
+        let from = Tuple::new_point(1.0, 3.0, 2.0);
+        let to = Tuple::new_point(4.0, -2.0, 8.0);
+        let up = Tuple::new_vector(1.0, 1.0, 0.0);
+        let tform = Transformation::View(from, to, up);
+        let got = Matrix::transform(tform);
+        let want = Matrix {
+            size: 4,
+            data: vec![
+                vec![-0.50709, 0.50709, 0.67612, -2.36643],
+                vec![0.76772, 0.60609, 0.12122, -2.82843],
+                vec![-0.35857, 0.59761, -0.71714, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0],
+            ],
+        };
+        assert_eq!(got, want);
     }
 }

@@ -46,18 +46,18 @@ impl Sphere {
     pub fn set_material(&mut self, material: Material) {
         self.material = material;
     }
-}
 
-impl Hittable for Sphere {
-    fn get_id(&self) -> usize {
+    pub fn get_id(&self) -> usize {
         self.id
     }
 
-    fn get_type(&self) -> ObjectType {
+    pub fn get_type(&self) -> ObjectType {
         self.tp
     }
+}
 
-    fn intersect(&self, ray: Ray) -> Vec<Intersection> {
+impl Hittable for Sphere {
+    fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let tformed_ray = ray.transform(&self.transform.inverse());
         let sphere_to_ray = tformed_ray.origin - Tuple::new_point(0.0, 0.0, 0.0);
         let a = tformed_ray.direction * tformed_ray.direction;
@@ -83,7 +83,6 @@ impl PartialEq for Sphere {
 
 #[cfg(test)]
 mod test {
-    use std::borrow::Borrow;
 
     use crate::{
         draw::color::Color,
@@ -102,7 +101,7 @@ mod test {
     fn sphere_ray_intersects_at_2_points() {
         let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, 4.0));
         assert!(float_equal(xs[1].t, 6.0));
@@ -112,7 +111,7 @@ mod test {
     fn sphere_ray_intersects_at_tangent() {
         let r = Ray::new((0.0, 1.0, -5.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, 5.0));
         assert!(float_equal(xs[1].t, 5.0));
@@ -122,7 +121,7 @@ mod test {
     fn sphere_ray_misses_sphere() {
         let r = Ray::new((0.0, 2.0, -0.5), (0.0, 0.0, 1.0));
         let s = Sphere::new();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert!(xs.len() == 0);
     }
 
@@ -130,7 +129,7 @@ mod test {
     fn sphere_ray_originates_inside_sphere() {
         let r = Ray::new((0.0, 0.0, 0.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, -1.0));
         assert!(float_equal(xs[1].t, 1.0));
@@ -140,7 +139,7 @@ mod test {
     fn sphere_sphere_behind_ray() {
         let r = Ray::new((0.0, 0.0, 5.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, -6.0));
         assert!(float_equal(xs[1].t, -4.0));
@@ -166,7 +165,7 @@ mod test {
         let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
         let mut s = Sphere::new();
         s.set_transform(Transformation::Scale(2.0, 2.0, 2.0));
-        let intersections = s.intersect(r);
+        let intersections = s.intersect(&r);
         assert!(intersections.len() == 2);
         assert_eq!(intersections[0].t, 3.0);
         assert_eq!(intersections[1].t, 7.0);
@@ -177,7 +176,7 @@ mod test {
         let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
         let mut s = Sphere::new();
         s.set_transform(Transformation::Translate(5.0, 0.0, 0.0));
-        let intersections = s.intersect(r);
+        let intersections = s.intersect(&r);
         assert_eq!(intersections.len(), 0);
     }
 

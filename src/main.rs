@@ -2,65 +2,137 @@ mod draw;
 mod math;
 mod render;
 
-use draw::{canvas::*, color::*};
-use math::{ray::Ray, tuple::*};
+use std::f64::consts::PI;
+
+use draw::color::*;
+use math::{
+    matrix::{Matrix, Transformation},
+    tuple::*,
+};
 use render::{
-    hit::{Hittable, Intersection},
     light::{point::PointLight, Light},
     material::Material,
     object::{sphere::Sphere, Object},
+    world::World,
 };
 
-pub fn create_object() -> Object {
-    let mut sphere = Sphere::new();
+fn create_floor() -> Object {
+    let mut floor = Sphere::new();
+    let tform = Transformation::Scale(10.0, 0.01, 10.0);
     let mut material = Material::default();
-    material.color = Color::new(1.0, 0.2, 1.0);
-    sphere.set_material(material);
-    Object::Sphere(sphere)
+    material.color = Color::new(1.0, 0.9, 0.9);
+    material.specular = 0.0;
+    floor.set_material(material);
+    floor.set_transform(tform);
+    Object::Sphere(floor)
 }
 
-pub fn create_light() -> Light {
-    let pos = Tuple::new_point(-10.0, 10.0, -10.0);
-    let color = Color::new(1.0, 1.0, 1.0);
-    let point_light: PointLight = PointLight::new(pos, color);
-    Light::Point(point_light)
+fn create_left_wall() -> Object {
+    let mut left_wall = Sphere::new();
+    left_wall.transform = Matrix::transform_chain(&[
+        Transformation::Scale(10.0, 0.01, 10.0),
+        Transformation::RotateX(PI / 2.0),
+        Transformation::RotateY(-PI / 4.0),
+        Transformation::Translate(0.0, 0.0, 5.0),
+    ]);
+    let mut material = Material::default();
+    material.color = Color::new(1.0, 0.9, 0.9);
+    material.specular = 0.0;
+    left_wall.set_material(material);
+    Object::Sphere(left_wall)
 }
 
-pub fn draw(width: usize, height: usize, canvas: &mut Canvas) {
-    let origin = &Tuple::new_point(0.0, 0.0, -5.0);
-    let wall_z = 10.0;
-    let wall_size = 7.0;
-    let pixel_size = wall_size / (width as f64);
-    let half = wall_size / 2.0;
+fn create_right_wall() -> Object {
+    let mut right_wall = Sphere::new();
+    right_wall.transform = Matrix::transform_chain(&[
+        Transformation::Scale(10.0, 0.01, 10.0),
+        Transformation::RotateX(PI / 2.0),
+        Transformation::RotateY(PI / 4.0),
+        Transformation::Translate(0.0, 0.0, 5.0),
+    ]);
+    let mut material = Material::default();
+    material.color = Color::new(1.0, 0.9, 0.9);
+    material.specular = 0.0;
+    right_wall.set_material(material);
+    Object::Sphere(right_wall)
+}
 
-    let obj = create_object();
-    let light = create_light();
+fn create_middle() -> Object {
+    let mut middle = Sphere::new();
+    let tform = Transformation::Translate(-0.5, 1.0, 0.5);
+    let mut material = Material::default();
+    material.color = Color::new(0.1, 1.0, 0.5);
+    material.specular = 0.3;
+    material.diffuse = 0.7;
+    middle.set_material(material);
+    middle.set_transform(tform);
+    Object::Sphere(middle)
+}
 
-    for y in 0..height {
-        let world_y = half - (pixel_size * (y as f64));
-        for x in 0..width {
-            let world_x = -half + (pixel_size * (x as f64));
-            let pos = Tuple::new_point(world_x, world_y, wall_z);
-            let origin_tuple = origin.as_tuple();
-            let vector_tuple = (pos - origin).normalize().as_tuple();
-            let ray = Ray::new(
-                (origin_tuple.0, origin_tuple.1, origin_tuple.2),
-                (vector_tuple.0, vector_tuple.1, vector_tuple.2),
-            );
-            let intersections = obj.intersect(ray);
-            if let Some(hit) = Intersection::get_hit(&intersections) {
-                let point = ray.position_at(hit.t);
-                let normal_vector = hit.object.normal_at(&point);
-                let eye_vector = -ray.direction;
-                let color = &light.lighting(obj.get_material(), point, eye_vector, normal_vector);
-                canvas.set_pixel((x, y), color);
-            }
-        }
-    }
+fn create_left() -> Object {
+    let mut left = Sphere::new();
+    left.transform = Matrix::transform_chain(&[
+        Transformation::Scale(0.33, 0.33, 0.33),
+        Transformation::Translate(-1.5, 0.33, -0.75),
+    ]);
+    let mut material = Material::default();
+    material.color = Color::new(0.5, 1.0, 0.1);
+    material.specular = 0.3;
+    material.diffuse = 0.7;
+    left.set_material(material);
+    Object::Sphere(left)
+}
+
+fn create_right() -> Object {
+    let mut right = Sphere::new();
+    right.transform = Matrix::transform_chain(&[
+        Transformation::Scale(0.5, 0.5, 0.5),
+        Transformation::Translate(1.5, 0.5, -0.5),
+    ]);
+    let mut material = Material::default();
+    material.color = Color::new(1.0, 0.8, 0.1);
+    material.specular = 0.3;
+    material.diffuse = 0.7;
+    right.set_material(material);
+    Object::Sphere(right)
+}
+
+fn create_light() -> Light {
+    let light = PointLight::new(
+        Tuple::new_point(-10.0, 10.0, -10.0),
+        Color::new(1.0, 1.0, 1.0),
+    );
+    Light::Point(light)
 }
 
 fn main() -> std::io::Result<()> {
-    let mut c = Canvas::new(100, 100);
-    draw(100, 100, &mut c);
-    c.save("./", "circle")
+    let width: usize = 100;
+    let height: usize = 100;
+    let field_of_view = PI / 3.0;
+
+    let floor = create_floor();
+    let left_wall = create_left_wall();
+    let right_wall = create_right_wall();
+    let left = create_left();
+    let middle = create_middle();
+    let right = create_right();
+    let light = create_light();
+
+    let mut world = World::new(width, height, field_of_view);
+    world.add_object(floor);
+    world.add_object(left_wall);
+    world.add_object(right_wall);
+    world.add_object(left);
+    world.add_object(middle);
+    world.add_object(right);
+    world.add_light(light);
+
+    world.camera.add_transform(Transformation::View(
+        Tuple::new_point(0.0, 1.5, -5.0),
+        Tuple::new_point(0.0, 1.0, 0.0),
+        Tuple::new_vector(0.0, 1.0, 0.0),
+    ));
+
+    let canvas = world.render();
+    canvas.save("./", "circle")
 }
