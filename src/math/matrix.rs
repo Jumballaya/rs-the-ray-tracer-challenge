@@ -139,24 +139,24 @@ impl Matrix {
         Matrix::new(self.size, data)
     }
 
-    pub fn transform(tform: Transformation) -> Matrix {
+    pub fn transform(tform: &Transformation) -> Matrix {
         match tform {
             Transformation::None => Matrix::identity_matrix(4),
             Transformation::Translate(x, y, z) => Matrix {
                 size: 4,
                 data: vec![
-                    vec![1.0, 0.0, 0.0, x],
-                    vec![0.0, 1.0, 0.0, y],
-                    vec![0.0, 0.0, 1.0, z],
+                    vec![1.0, 0.0, 0.0, x.clone()],
+                    vec![0.0, 1.0, 0.0, y.clone()],
+                    vec![0.0, 0.0, 1.0, z.clone()],
                     vec![0.0, 0.0, 0.0, 1.0],
                 ],
             },
             Transformation::Scale(x, y, z) => Matrix {
                 size: 4,
                 data: vec![
-                    vec![x, 0.0, 0.0, 0.0],
-                    vec![0.0, y, 0.0, 0.0],
-                    vec![0.0, 0.0, z, 0.0],
+                    vec![x.clone(), 0.0, 0.0, 0.0],
+                    vec![0.0, y.clone(), 0.0, 0.0],
+                    vec![0.0, 0.0, z.clone(), 0.0],
                     vec![0.0, 0.0, 0.0, 1.0],
                 ],
             },
@@ -190,9 +190,9 @@ impl Matrix {
             Transformation::Shear(x_y, x_z, y_x, y_z, z_x, z_y) => Matrix {
                 size: 4,
                 data: vec![
-                    vec![1.0, x_y, x_z, 0.0],
-                    vec![y_x, 1.0, y_z, 0.0],
-                    vec![z_x, z_y, 1.0, 0.0],
+                    vec![1.0, x_y.clone(), x_z.clone(), 0.0],
+                    vec![y_x.clone(), 1.0, y_z.clone(), 0.0],
+                    vec![z_x.clone(), z_y.clone(), 1.0, 0.0],
                     vec![0.0, 0.0, 0.0, 1.0],
                 ],
             },
@@ -212,7 +212,7 @@ impl Matrix {
                 };
 
                 orientation
-                    * Matrix::transform(Transformation::Translate(-from.x, -from.y, -from.z))
+                    * Matrix::transform(&Transformation::Translate(-from.x, -from.y, -from.z))
             }
             Transformation::Chain(chain) => Matrix::transform_chain(&chain),
         }
@@ -224,7 +224,7 @@ impl Matrix {
             .iter()
             .rev()
             .cloned()
-            .map(|tform| Matrix::transform(tform))
+            .map(|tform| Matrix::transform(&tform))
             .reduce(|acc, cur| acc * cur);
         if let Some(matrix) = m {
             return matrix;
@@ -396,6 +396,38 @@ impl Mul<&Matrix> for Tuple {
         for row in 0..rhs.size {
             for col in 0..rhs.size {
                 vals[row] += rhs[row][col] * self[col];
+            }
+        }
+
+        Tuple::from(vals[0], vals[1], vals[2], vals[3])
+    }
+}
+
+impl Mul<&Matrix> for &Tuple {
+    type Output = Tuple;
+
+    fn mul(self, rhs: &Matrix) -> Self::Output {
+        let mut vals = [0.0; 4];
+
+        for row in 0..rhs.size {
+            for col in 0..rhs.size {
+                vals[row] += rhs[row][col] * self[col];
+            }
+        }
+
+        Tuple::from(vals[0], vals[1], vals[2], vals[3])
+    }
+}
+
+impl Mul<&Tuple> for &Matrix {
+    type Output = Tuple;
+
+    fn mul(self, rhs: &Tuple) -> Self::Output {
+        let mut vals = [0.0; 4];
+
+        for row in 0..self.size {
+            for col in 0..self.size {
+                vals[row] += self[row][col] * rhs[col];
             }
         }
 
@@ -942,7 +974,7 @@ mod tests {
         let tx = Transformation::Translate(5.0, -3.0, 2.0);
         let p = Tuple::new_point(-3.0, 4.0, 5.0);
         let want = Tuple::new_point(2.0, 1.0, 7.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -951,7 +983,7 @@ mod tests {
         let tx = Transformation::Translate(5.0, -3.0, 2.0);
         let p = Tuple::new_point(-3.0, 4.0, 5.0);
         let want = Tuple::new_point(-8.0, 7.0, 3.0);
-        let inverse = Matrix::transform(tx).inverse();
+        let inverse = Matrix::transform(&tx).inverse();
         let got = inverse * p;
         assert_eq!(got, want);
     }
@@ -961,7 +993,7 @@ mod tests {
         let tx = Transformation::Translate(5.0, -3.0, 2.0);
         let v = Tuple::new_vector(-3.0, 4.0, 5.0);
         let want = Tuple::new_vector(-3.0, 4.0, 5.0);
-        let got = Matrix::transform(tx) * v;
+        let got = Matrix::transform(&tx) * v;
         assert_eq!(want, got);
     }
 
@@ -970,7 +1002,7 @@ mod tests {
         let tx = Transformation::Scale(2.0, 3.0, 4.0);
         let p = Tuple::new_point(-4.0, 6.0, 8.0);
         let want = Tuple::new_point(-8.0, 18.0, 32.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -979,7 +1011,7 @@ mod tests {
         let tx = Transformation::Scale(2.0, 3.0, 4.0);
         let v = Tuple::new_vector(-4.0, 6.0, 8.0);
         let want = Tuple::new_vector(-8.0, 18.0, 32.0);
-        let got = Matrix::transform(tx) * v;
+        let got = Matrix::transform(&tx) * v;
         assert_eq!(got, want);
     }
 
@@ -989,7 +1021,7 @@ mod tests {
         let v = Tuple::new_vector(-4.0, 6.0, 8.0);
         let want = Tuple::new_vector(-2.0, 2.0, 2.0);
 
-        let inverse = Matrix::transform(tx).inverse();
+        let inverse = Matrix::transform(&tx).inverse();
         let got = inverse * v;
         assert_eq!(got, want);
     }
@@ -999,7 +1031,7 @@ mod tests {
         let tx = Transformation::Scale(-1.0, 1.0, 1.0);
         let p = Tuple::new_point(2.0, 3.0, 4.0);
         let want = Tuple::new_point(-2.0, 3.0, 4.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -1013,8 +1045,8 @@ mod tests {
         let want1 = Tuple::new_point(0.0, (2.0 as f64).sqrt() / 2.0, (2.0 as f64).sqrt() / 2.0);
         let want2 = Tuple::new_point(0.0, 0.0, 1.0);
 
-        let got1 = Matrix::transform(tx_half_quarter) * p1;
-        let got2 = Matrix::transform(tx_full_quarter) * p2;
+        let got1 = Matrix::transform(&tx_half_quarter) * p1;
+        let got2 = Matrix::transform(&tx_full_quarter) * p2;
 
         assert_eq!(got1, want1);
         assert_eq!(got2, want2);
@@ -1024,7 +1056,7 @@ mod tests {
     fn matrix_inverse_x_rotation_rotates_opposite_direction() {
         let p = Tuple::new_point(0.0, 1.0, 0.0);
         let tx = Transformation::RotateX(PI / 4.0);
-        let inv = Matrix::transform(tx).inverse();
+        let inv = Matrix::transform(&tx).inverse();
         let want = Tuple::new_point(0.0, (2.0 as f64).sqrt() / 2.0, -((2.0 as f64).sqrt() / 2.0));
         let got = inv * p;
         assert_eq!(got, want);
@@ -1040,8 +1072,8 @@ mod tests {
         let want1 = Tuple::new_point((2.0 as f64).sqrt() / 2.0, 0.0, (2.0 as f64).sqrt() / 2.0);
         let want2 = Tuple::new_point(1.0, 0.0, 0.0);
 
-        let got1 = Matrix::transform(tx_half_quarter) * p1;
-        let got2 = Matrix::transform(tx_full_quarter) * p2;
+        let got1 = Matrix::transform(&tx_half_quarter) * p1;
+        let got2 = Matrix::transform(&tx_full_quarter) * p2;
 
         assert_eq!(got1, want1);
         assert_eq!(got2, want2);
@@ -1057,8 +1089,8 @@ mod tests {
         let want1 = Tuple::new_point(-((2.0 as f64).sqrt()) / 2.0, (2.0 as f64).sqrt() / 2.0, 0.0);
         let want2 = Tuple::new_point(-1.0, 0.0, 0.0);
 
-        let got1 = Matrix::transform(tx_half_quarter) * p1;
-        let got2 = Matrix::transform(tx_full_quarter) * p2;
+        let got1 = Matrix::transform(&tx_half_quarter) * p1;
+        let got2 = Matrix::transform(&tx_full_quarter) * p2;
 
         assert_eq!(got1, want1);
         assert_eq!(got2, want2);
@@ -1069,7 +1101,7 @@ mod tests {
         let tx = Transformation::Shear(1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         let p = Tuple::new_point(2.0, 3.0, 4.0);
         let want = Tuple::new_point(5.0, 3.0, 4.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -1078,7 +1110,7 @@ mod tests {
         let tx = Transformation::Shear(0.0, 1.0, 0.0, 0.0, 0.0, 0.0);
         let p = Tuple::new_point(2.0, 3.0, 4.0);
         let want = Tuple::new_point(6.0, 3.0, 4.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -1087,7 +1119,7 @@ mod tests {
         let tx = Transformation::Shear(0.0, 0.0, 1.0, 0.0, 0.0, 0.0);
         let p = Tuple::new_point(2.0, 3.0, 4.0);
         let want = Tuple::new_point(2.0, 5.0, 4.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -1096,7 +1128,7 @@ mod tests {
         let tx = Transformation::Shear(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
         let p = Tuple::new_point(2.0, 3.0, 4.0);
         let want = Tuple::new_point(2.0, 7.0, 4.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -1105,7 +1137,7 @@ mod tests {
         let tx = Transformation::Shear(0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
         let p = Tuple::new_point(2.0, 3.0, 4.0);
         let want = Tuple::new_point(2.0, 3.0, 6.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
@@ -1114,16 +1146,16 @@ mod tests {
         let tx = Transformation::Shear(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
         let p = Tuple::new_point(2.0, 3.0, 4.0);
         let want = Tuple::new_point(2.0, 3.0, 7.0);
-        let got = Matrix::transform(tx) * p;
+        let got = Matrix::transform(&tx) * p;
         assert_eq!(got, want);
     }
 
     #[test]
     fn matrix_can_apply_multiple_transforms_in_sequence() {
         let p = Tuple::new_point(1.0, 0.0, 1.0);
-        let tx_a = Matrix::transform(Transformation::RotateX(PI / 2.0));
-        let tx_b = Matrix::transform(Transformation::Scale(5.0, 5.0, 5.0));
-        let tx_c = Matrix::transform(Transformation::Translate(10.0, 5.0, 7.0));
+        let tx_a = Matrix::transform(&Transformation::RotateX(PI / 2.0));
+        let tx_b = Matrix::transform(&Transformation::Scale(5.0, 5.0, 5.0));
+        let tx_c = Matrix::transform(&Transformation::Translate(10.0, 5.0, 7.0));
 
         let p2 = tx_a * p;
         let want1 = Tuple::new_point(1.0, -1.0, 0.0);
@@ -1141,11 +1173,13 @@ mod tests {
     #[test]
     fn matrix_can_apply_chained_transforms() {
         let p = Tuple::new_point(1.0, 0.0, 1.0);
-        let tx_a = Transformation::RotateX(PI / 2.0);
-        let tx_b = Transformation::Scale(5.0, 5.0, 5.0);
-        let tx_c = Transformation::Translate(10.0, 5.0, 7.0);
+        let tform = Transformation::Chain(vec![
+            Transformation::RotateX(PI / 2.0),
+            Transformation::Scale(5.0, 5.0, 5.0),
+            Transformation::Translate(10.0, 5.0, 7.0),
+        ]);
 
-        let tx = Matrix::transform_chain(&[tx_a, tx_b, tx_c]);
+        let tx = Matrix::transform(&tform);
 
         let got = tx * p;
         let want = Tuple::new_point(15.0, 0.0, 7.0);
@@ -1158,7 +1192,7 @@ mod tests {
         let to = Tuple::new_point(0.0, 0.0, -1.0);
         let up = Tuple::new_vector(0.0, 1.0, 0.0);
         let tform = Transformation::View(from, to, up);
-        assert_eq!(Matrix::transform(tform), Matrix::identity_matrix(4));
+        assert_eq!(Matrix::transform(&tform), Matrix::identity_matrix(4));
     }
 
     #[test]
@@ -1168,7 +1202,7 @@ mod tests {
         let up = Tuple::new_vector(0.0, 1.0, 0.0);
         let tform = Transformation::View(from, to, up);
         let scale_tform = Transformation::Scale(-1.0, 1.0, -1.0);
-        assert_eq!(Matrix::transform(tform), Matrix::transform(scale_tform));
+        assert_eq!(Matrix::transform(&tform), Matrix::transform(&scale_tform));
     }
 
     #[test]
@@ -1178,7 +1212,10 @@ mod tests {
         let up = Tuple::new_vector(0.0, 1.0, 0.0);
         let tform = Transformation::View(from, to, up);
         let translate_tform = Transformation::Translate(-1.0, 1.0, -1.0);
-        assert_eq!(Matrix::transform(tform), Matrix::transform(translate_tform));
+        assert_eq!(
+            Matrix::transform(&tform),
+            Matrix::transform(&translate_tform)
+        );
     }
 
     #[test]
@@ -1187,7 +1224,7 @@ mod tests {
         let to = Tuple::new_point(4.0, -2.0, 8.0);
         let up = Tuple::new_vector(1.0, 1.0, 0.0);
         let tform = Transformation::View(from, to, up);
-        let got = Matrix::transform(tform);
+        let got = Matrix::transform(&tform);
         let want = Matrix {
             size: 4,
             data: vec![

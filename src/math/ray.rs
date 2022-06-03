@@ -68,7 +68,7 @@ mod test {
     fn ray_can_transform_translate_a_ray() {
         let r = Ray::new((1.0, 2.0, 3.0), (0.0, 1.0, 0.0));
         let translate = Transformation::Translate(3.0, 4.0, 5.0);
-        let r2 = r.transform(&Matrix::transform(translate));
+        let r2 = r.transform(&Matrix::transform(&translate));
         assert_eq!(r2.origin, Tuple::new_point(4.0, 6.0, 8.0));
         assert_eq!(r2.direction, Tuple::new_vector(0.0, 1.0, 0.0));
     }
@@ -77,7 +77,7 @@ mod test {
     fn ray_can_transform_scale_a_ray() {
         let r = Ray::new((1.0, 2.0, 3.0), (0.0, 1.0, 0.0));
         let translate = Transformation::Scale(2.0, 3.0, 4.0);
-        let r2 = r.transform(&Matrix::transform(translate));
+        let r2 = r.transform(&Matrix::transform(&translate));
         assert_eq!(r2.origin, Tuple::new_point(2.0, 6.0, 12.0));
         assert_eq!(r2.direction, Tuple::new_vector(0.0, 3.0, 0.0));
     }

@@ -11,8 +11,9 @@ use crate::render::material::Material;
 pub struct Sphere {
     id: usize,
     tp: ObjectType,
-    pub transform: Matrix,
+    transform: Transformation,
     pub material: Material,
+    cached_matrix: Matrix,
 }
 
 impl Sphere {
@@ -20,23 +21,54 @@ impl Sphere {
         Self {
             id: OBJECT_COUNTER.fetch_add(1, Ordering::SeqCst),
             tp: ObjectType::Sphere,
-            transform: Matrix::identity_matrix(4),
+            transform: Transformation::None,
             material: Material::default(),
+            cached_matrix: Matrix::identity_matrix(4),
         }
     }
 
     pub fn set_transform(&mut self, tform: Transformation) {
-        let m = Matrix::transform(tform);
-        self.transform = m;
+        let m = Matrix::transform(&tform);
+        self.transform = tform;
+        self.cached_matrix = m;
     }
 
-    pub fn normal_at(&self, world_point: &Tuple) -> Tuple {
-        let object_point = self.transform.inverse() * world_point;
+    pub fn get_transform(&self) -> Matrix {
+        self.cached_matrix.clone()
+    }
+
+    pub fn local_normal_at(&self, object_point: &Tuple) -> Tuple {
         let object_normal = object_point - Tuple::new_point(0.0, 0.0, 0.0);
-        let mut world_normal = self.transform.inverse().transpose() * object_normal;
+        let mut world_normal = &self.get_transform().inverse().transpose() * object_normal;
         world_normal.w = 0.0;
         world_normal.tp = TupleType::Vector;
         world_normal.normalize()
+    }
+
+    pub fn normal_at(&self, world_point: &Tuple) -> Tuple {
+        let object_point = &self.get_transform().inverse() * world_point;
+        self.local_normal_at(&object_point)
+    }
+
+    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        let tformed_ray = ray.transform(&self.get_transform().inverse());
+        self.local_intercept(&tformed_ray)
+    }
+
+    pub fn local_intercept(&self, ray: &Ray) -> Vec<Intersection> {
+        let sphere_to_ray = ray.origin - Tuple::new_point(0.0, 0.0, 0.0);
+        let a = ray.direction * ray.direction;
+        let b = 2.0 * (ray.direction * sphere_to_ray);
+        let c = (sphere_to_ray * sphere_to_ray) - 1.0;
+        let discriminant = b.powi(2) - 4.0 * a * c;
+        if discriminant < 0.0 {
+            return vec![];
+        }
+        let hit1 = (-b - (discriminant.sqrt())) / (2.0 * a);
+        let hit2 = (-b + (discriminant.sqrt())) / (2.0 * a);
+        let intersection1 = Intersection::new(Object::Sphere(self.clone()), hit1);
+        let intersection2 = Intersection::new(Object::Sphere(self.clone()), hit2);
+        vec![intersection1, intersection2]
     }
 
     pub fn get_material(&self) -> &Material {
@@ -53,25 +85,6 @@ impl Sphere {
 
     pub fn get_type(&self) -> ObjectType {
         self.tp
-    }
-}
-
-impl Hittable for Sphere {
-    fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let tformed_ray = ray.transform(&self.transform.inverse());
-        let sphere_to_ray = tformed_ray.origin - Tuple::new_point(0.0, 0.0, 0.0);
-        let a = tformed_ray.direction * tformed_ray.direction;
-        let b = 2.0 * (tformed_ray.direction * sphere_to_ray);
-        let c = (sphere_to_ray * sphere_to_ray) - 1.0;
-        let discriminant = b.powi(2) - 4.0 * a * c;
-        if discriminant < 0.0 {
-            return vec![];
-        }
-        let hit1 = (-b - (discriminant.sqrt())) / (2.0 * a);
-        let hit2 = (-b + (discriminant.sqrt())) / (2.0 * a);
-        let intersection1 = Intersection::new(Object::Sphere(self.clone()), hit1);
-        let intersection2 = Intersection::new(Object::Sphere(self.clone()), hit2);
-        vec![intersection1, intersection2]
     }
 }
 
@@ -92,7 +105,7 @@ mod test {
             ray::Ray,
             tuple::Tuple,
         },
-        render::{hit::Hittable, material::Material},
+        render::material::Material,
     };
 
     use super::Sphere;
@@ -149,7 +162,7 @@ mod test {
     fn sphere_default_tfrom_is_ident() {
         let s = Sphere::new();
         let m = Matrix::identity_matrix(4);
-        assert_eq!(s.transform, m);
+        assert_eq!(s.get_transform(), m);
     }
 
     #[test]
@@ -157,7 +170,7 @@ mod test {
         let mut s = Sphere::new();
         let translate = Transformation::Translate(2.0, 3.0, 4.0);
         s.set_transform(translate.clone());
-        assert_eq!(s.transform, Matrix::transform(translate));
+        assert_eq!(s.get_transform(), Matrix::transform(&translate));
     }
 
     #[test]

@@ -5,10 +5,7 @@ mod render;
 use std::f64::consts::PI;
 
 use draw::color::*;
-use math::{
-    matrix::{Matrix, Transformation},
-    tuple::*,
-};
+use math::{matrix::Transformation, tuple::*};
 use render::{
     light::{point::PointLight, Light},
     material::Material,
@@ -29,12 +26,13 @@ fn create_floor() -> Object {
 
 fn create_left_wall() -> Object {
     let mut left_wall = Sphere::new();
-    left_wall.transform = Matrix::transform_chain(&[
+    let tform = Transformation::Chain(vec![
         Transformation::Scale(10.0, 0.01, 10.0),
         Transformation::RotateX(PI / 2.0),
         Transformation::RotateY(-PI / 4.0),
         Transformation::Translate(0.0, 0.0, 5.0),
     ]);
+    left_wall.set_transform(tform);
     let mut material = Material::default();
     material.color = Color::new(1.0, 0.9, 0.9);
     material.specular = 0.0;
@@ -44,12 +42,13 @@ fn create_left_wall() -> Object {
 
 fn create_right_wall() -> Object {
     let mut right_wall = Sphere::new();
-    right_wall.transform = Matrix::transform_chain(&[
+    let tform = Transformation::Chain(vec![
         Transformation::Scale(10.0, 0.01, 10.0),
         Transformation::RotateX(PI / 2.0),
         Transformation::RotateY(PI / 4.0),
         Transformation::Translate(0.0, 0.0, 5.0),
     ]);
+    right_wall.set_transform(tform);
     let mut material = Material::default();
     material.color = Color::new(1.0, 0.9, 0.9);
     material.specular = 0.0;
@@ -71,10 +70,11 @@ fn create_middle() -> Object {
 
 fn create_left() -> Object {
     let mut left = Sphere::new();
-    left.transform = Matrix::transform_chain(&[
+    let tform = Transformation::Chain(vec![
         Transformation::Scale(0.33, 0.33, 0.33),
         Transformation::Translate(-1.5, 0.33, -0.75),
     ]);
+    left.set_transform(tform);
     let mut material = Material::default();
     material.color = Color::new(0.5, 1.0, 0.1);
     material.specular = 0.3;
@@ -85,10 +85,11 @@ fn create_left() -> Object {
 
 fn create_right() -> Object {
     let mut right = Sphere::new();
-    right.transform = Matrix::transform_chain(&[
+    let tform = Transformation::Chain(vec![
         Transformation::Scale(0.5, 0.5, 0.5),
         Transformation::Translate(1.5, 0.5, -0.5),
     ]);
+    right.set_transform(tform);
     let mut material = Material::default();
     material.color = Color::new(1.0, 0.8, 0.1);
     material.specular = 0.3;
@@ -106,8 +107,8 @@ fn create_light() -> Light {
 }
 
 fn main() -> std::io::Result<()> {
-    let width: usize = 500;
-    let height: usize = 500;
+    let width: usize = 100;
+    let height: usize = 100;
     let field_of_view = PI / 3.0;
 
     let floor = create_floor();
