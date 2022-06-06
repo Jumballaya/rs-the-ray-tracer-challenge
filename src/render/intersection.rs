@@ -4,9 +4,9 @@ use crate::math::{tuple::Tuple, EPSILON};
 
 use super::{super::math::ray::Ray, object::Object};
 
-pub struct HitComputation<'a> {
+pub struct HitComputation {
     pub t: f64,
-    pub object: &'a Object,
+    pub object: Object,
     pub point: Tuple,
     pub eye_vector: Tuple,
     pub normal_vector: Tuple,
@@ -14,6 +14,7 @@ pub struct HitComputation<'a> {
     pub over_point: Tuple,
 }
 
+#[derive(Clone)]
 pub struct Intersection {
     pub t: f64,
     pub object: Object,
@@ -24,20 +25,17 @@ impl Intersection {
         Intersection { t, object }
     }
 
-    pub fn get_hit<'a>(intersections: &'a Vec<Intersection>) -> Option<&'a Intersection> {
-        let mut pos_ints: Vec<&'a Intersection> =
+    pub fn get_hit(intersections: &Vec<Intersection>) -> Option<Intersection> {
+        let mut pos_ints: Vec<&Intersection> =
             intersections.iter().filter(|int| int.t > 0.0).collect();
+        pos_ints.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
         if pos_ints.len() > 0 {
-            pos_ints.sort();
-            return Some(pos_ints[0]);
+            return Some(pos_ints[0].clone());
         }
         None
     }
 
-    pub fn prepare_computation<'a>(
-        intersection: &'a Intersection,
-        ray: &Ray,
-    ) -> HitComputation<'a> {
+    pub fn prepare_computation(intersection: &Intersection, ray: &Ray) -> HitComputation {
         let point = ray.position_at(intersection.t);
         let eye_vector = -ray.direction;
         let object = &intersection.object;
@@ -57,7 +55,7 @@ impl Intersection {
 
         HitComputation {
             t,
-            object,
+            object: object.clone(),
             point,
             eye_vector,
             normal_vector,
@@ -66,10 +64,10 @@ impl Intersection {
         }
     }
 
-    pub fn prepare_computations<'a>(
-        intersections: &'a Vec<Intersection>,
+    pub fn prepare_computations(
+        intersections: Vec<Intersection>,
         ray: &Ray,
-    ) -> Vec<HitComputation<'a>> {
+    ) -> Vec<HitComputation> {
         intersections
             .iter()
             .map(|intersection| Intersection::prepare_computation(intersection, ray))

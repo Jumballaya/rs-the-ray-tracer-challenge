@@ -34,15 +34,12 @@ impl World {
     }
 
     pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let mut hits: Vec<Intersection> = vec![];
-
-        for object in &self.objects {
-            for hit in object.intersect(ray) {
-                hits.push(hit);
-            }
-        }
-
-        hits.sort();
+        let mut hits: Vec<Intersection> = self
+            .objects
+            .iter()
+            .flat_map(|obj| obj.intersect(ray))
+            .collect();
+        hits.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
         hits
     }
 

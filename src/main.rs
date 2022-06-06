@@ -18,7 +18,10 @@ fn create_floor() -> Object {
     let mut floor = Plane::new();
     let material = Material::new(Color::new(1.0, 0.9, 0.9), 0.1, 0.9, 0.0, 200.0);
     floor.set_material(material);
-    floor.set_transform(Transformation::Translate(0.0, -1.0, 0.0));
+    floor.set_transform(Transformation::Chain(vec![
+        Transformation::RotateX(PI * 0.8),
+        Transformation::Translate(0.0, -0.25, 0.0),
+    ]));
     Object::Plane(floor)
 }
 
