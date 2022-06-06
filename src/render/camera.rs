@@ -9,10 +9,11 @@ pub struct Camera {
     pub hsize: usize,       // Horizontal size (px) of the picture that will be rendered
     pub vsize: usize,       // Vertical size (px) of the picture that will be rendered
     pub field_of_view: f64, // Angle of vision width
-    pub transforms: Vec<Transformation>, // Transformations
+    pub transform: Transformation, // Transformations
     pub pixel_size: f64,    // Relative size of pixel in world space
     pub half_width: f64,    // Half of the picture's width in world space units
     pub half_height: f64,   // Half of the picture's height in world space units
+    cached_matrix: Matrix,  // Cached calculation of the camera's transform matrix
 }
 
 impl Camera {
@@ -34,7 +35,8 @@ impl Camera {
             pixel_size,
             half_height,
             half_width,
-            transforms: vec![],
+            transform: Transformation::None,
+            cached_matrix: Matrix::identity_matrix(4),
         }
     }
 
@@ -45,25 +47,19 @@ impl Camera {
         let world_x = self.half_width - x_offset;
         let world_y = self.half_height - y_offset;
 
-        let transform_inverse = self.get_transform().inverse();
-        let pixel = &transform_inverse * Tuple::new_point(world_x, world_y, -1.0);
-        let origin = transform_inverse * Tuple::new_point(0.0, 0.0, 0.0);
+        let pixel = self.get_transform().inverse() * Tuple::new_point(world_x, world_y, -1.0);
+        let origin = self.get_transform().inverse() * Tuple::new_point(0.0, 0.0, 0.0);
         let direction = (pixel - origin).normalize();
-        let (o_x, o_y, o_z, _) = origin.as_tuple();
-        let (d_x, d_y, d_z, _) = direction.as_tuple();
-        Ray::new((o_x, o_y, o_z), (d_x, d_y, d_z))
+        Ray::new(origin.as_tuple_3(), direction.as_tuple_3())
     }
 
-    pub fn add_transform(&mut self, tform: Transformation) {
-        self.transforms.push(tform);
-        self.transforms.reverse();
+    pub fn set_transform(&mut self, tform: Transformation) {
+        self.transform = tform;
+        self.cached_matrix = Matrix::transform(&self.transform)
     }
 
     pub fn get_transform(&self) -> Matrix {
-        if self.transforms.len() == 0 {
-            return Matrix::identity_matrix(4);
-        }
-        Matrix::transform_chain(&self.transforms)
+        self.cached_matrix.clone()
     }
 }
 
@@ -120,8 +116,11 @@ mod test {
     #[test]
     fn camera_constructing_a_ray_when_camera_is_transformed() {
         let mut c = Camera::new(201, 101, PI / 2.0);
-        c.add_transform(Transformation::RotateY(PI / 4.0));
-        c.add_transform(Transformation::Translate(0.0, -2.0, 5.0));
+        let tform = Transformation::Chain(vec![
+            Transformation::Translate(0.0, -2.0, 5.0),
+            Transformation::RotateY(PI / 4.0),
+        ]);
+        c.set_transform(tform);
         let ray = c.ray_for_pixel(100, 50);
         let root_2_2 = (2.0 as f64).sqrt() / 2.0;
         assert_eq!(ray.origin, Tuple::new_point(0.0, 2.0, -5.0));

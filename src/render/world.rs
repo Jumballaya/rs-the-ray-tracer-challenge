@@ -7,7 +7,7 @@ use crate::{
 
 use super::{
     camera::Camera,
-    hit::{HitComputation, Hittable, Intersection},
+    intersection::{HitComputation, Intersection},
     light::Light,
     object::Object,
 };
@@ -15,20 +15,13 @@ use super::{
 pub struct World {
     pub objects: Vec<Object>,
     pub lights: Vec<Light>,
-    pub camera: Camera,
-
-    width: usize,
-    height: usize,
 }
 
 impl World {
-    pub fn new(width: usize, height: usize, field_of_view: f64) -> Self {
+    pub fn new() -> Self {
         Self {
-            height,
-            width,
             objects: vec![],
             lights: vec![],
-            camera: Camera::new(height, width, field_of_view),
         }
     }
 
@@ -36,21 +29,20 @@ impl World {
         self.lights.push(light);
     }
 
-    pub fn empty_lights(&mut self) {
-        self.lights.clear();
-    }
-
     pub fn add_object(&mut self, obj: Object) {
         self.objects.push(obj);
     }
 
     pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let mut hits: Vec<Intersection> = self
-            .objects
-            .iter()
-            .flat_map(|obj| obj.intersect(ray))
-            .collect();
-        hits.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
+        let mut hits: Vec<Intersection> = vec![];
+
+        for object in &self.objects {
+            for hit in object.intersect(ray) {
+                hits.push(hit);
+            }
+        }
+
+        hits.sort();
         hits
     }
 
@@ -92,12 +84,12 @@ impl World {
         }
     }
 
-    pub fn render(&self) -> Canvas {
-        let mut canvas = Canvas::new(self.width, self.height);
+    pub fn render(&self, width: usize, height: usize, camera: &Camera) -> Canvas {
+        let mut canvas = Canvas::new(width, height);
 
-        for y in 0..self.width {
-            for x in 0..self.height {
-                let ray = self.camera.ray_for_pixel(x, y);
+        for y in 0..height {
+            for x in 0..width {
+                let ray = camera.ray_for_pixel(x, y);
                 let color = self.color_at(&ray);
                 canvas.set_pixel((x, y), &color);
             }
@@ -114,7 +106,7 @@ mod test {
         draw::color::Color,
         math::{matrix::Transformation, ray::Ray, tuple::Tuple},
         render::{
-            hit::Intersection,
+            intersection::Intersection,
             light::{point::PointLight, Light, LightType},
             material::Material,
             object::{sphere::Sphere, Object, ObjectType},
@@ -138,7 +130,7 @@ mod test {
         s1.set_material(material);
         s2.set_transform(Transformation::Scale(0.5, 0.5, 0.5));
 
-        let mut world = World::new(1, 1, 1.0);
+        let mut world = World::new();
         world.add_light(Light::Point(light));
         world.add_object(Object::Sphere(s1));
         world.add_object(Object::Sphere(s2));
@@ -147,7 +139,7 @@ mod test {
 
     #[test]
     fn world_new_world_has_no_objects_or_lights() {
-        let world = World::new(1, 1, 1.0);
+        let world = World::new();
         assert_eq!(world.objects.len(), 0);
         assert_eq!(world.lights.len(), 0);
     }
@@ -192,7 +184,7 @@ mod test {
     fn world_shading_an_intersection_from_the_inside() {
         let mut world = default_world();
         let light = PointLight::new(Tuple::new_point(0.0, 0.25, 0.0), Color::new(1.0, 1.0, 1.0));
-        world.empty_lights();
+        world.lights.clear();
         world.add_light(Light::Point(light));
         let ray = Ray::new((0.0, 0.0, 0.0), (0.0, 0.0, 1.0));
         let intersection = Intersection::new(world.objects[1].clone(), 0.5);
@@ -263,7 +255,7 @@ mod test {
 
     #[test]
     fn world_shade_hit_is_given_an_intersection_in_shadow() {
-        let mut w = World::new(1, 1, 1.0);
+        let mut w = World::new();
         w.add_light(Light::Point(PointLight::new(
             Tuple::new_point(0.0, 0.0, -10.0),
             Color::new(1.0, 1.0, 1.0),

@@ -1,5 +1,5 @@
 pub mod camera;
-pub mod hit;
+pub mod intersection;
 pub mod light;
 pub mod material;
 pub mod object;

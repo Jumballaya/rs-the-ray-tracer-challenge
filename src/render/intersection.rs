@@ -1,10 +1,8 @@
+use std::cmp::Ordering;
+
 use crate::math::{tuple::Tuple, EPSILON};
 
 use super::{super::math::ray::Ray, object::Object};
-
-pub trait Hittable {
-    fn intersect(&self, ray: &Ray) -> Vec<Intersection>;
-}
 
 pub struct HitComputation<'a> {
     pub t: f64,
@@ -16,7 +14,6 @@ pub struct HitComputation<'a> {
     pub over_point: Tuple,
 }
 
-#[derive(Debug)]
 pub struct Intersection {
     pub t: f64,
     pub object: Object,
@@ -30,8 +27,8 @@ impl Intersection {
     pub fn get_hit<'a>(intersections: &'a Vec<Intersection>) -> Option<&'a Intersection> {
         let mut pos_ints: Vec<&'a Intersection> =
             intersections.iter().filter(|int| int.t > 0.0).collect();
-        pos_ints.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
         if pos_ints.len() > 0 {
+            pos_ints.sort();
             return Some(pos_ints[0]);
         }
         None
@@ -80,6 +77,31 @@ impl Intersection {
     }
 }
 
+impl Eq for Intersection {}
+
+impl PartialEq for Intersection {
+    fn eq(&self, other: &Self) -> bool {
+        self.t == other.t
+    }
+}
+
+impl PartialOrd for Intersection {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Intersection {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.t > other.t {
+            return Ordering::Greater;
+        } else if self.t < other.t {
+            return Ordering::Less;
+        }
+        Ordering::Equal
+    }
+}
+
 #[cfg(test)]
 
 mod test {
@@ -88,7 +110,7 @@ mod test {
     use crate::{
         math::{matrix::Transformation, EPSILON},
         render::{
-            hit::Intersection,
+            intersection::Intersection,
             object::{sphere::Sphere, Object},
         },
     };

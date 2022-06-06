@@ -7,12 +7,12 @@ use crate::{
         tuple::Tuple,
         EPSILON,
     },
-    render::{hit::Intersection, material::Material},
+    render::{intersection::Intersection, material::Material},
 };
 
 use super::{Object, ObjectType, OBJECT_COUNTER};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Plane {
     id: usize,
     tp: ObjectType,
@@ -32,7 +32,7 @@ impl Plane {
         }
     }
 
-    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         if ray.direction.y.abs() < EPSILON {
             return vec![];
         }
@@ -40,24 +40,13 @@ impl Plane {
         vec![Intersection::new(Object::Plane(self.clone()), t)]
     }
 
-    pub fn local_normal_at(&self, object_point: &Tuple) -> Tuple {
+    pub fn normal_at(&self, _: &Tuple) -> Tuple {
         Tuple::new_vector(0.0, 1.0, 0.0)
     }
 
-    pub fn normal_at(&self, world_point: &Tuple) -> Tuple {
-        let object_point = &self.get_transform().inverse() * world_point;
-        self.local_normal_at(&object_point)
-    }
-
-    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let tformed_ray = ray.transform(&self.get_transform().inverse());
-        self.local_intersect(&tformed_ray)
-    }
-
     pub fn set_transform(&mut self, tform: Transformation) {
-        let m = Matrix::transform(&tform);
         self.transform = tform;
-        self.cached_matrix = m;
+        self.cached_matrix = Matrix::transform(&self.transform);
     }
 
     pub fn get_transform(&self) -> Matrix {
@@ -96,9 +85,9 @@ mod test {
     #[test]
     fn plane_normal_is_constant_everywhere() {
         let p = Plane::new();
-        let n1 = p.local_normal_at(&Tuple::new_point(0.0, 0.0, 0.0));
-        let n2 = p.local_normal_at(&Tuple::new_point(10.0, 0.0, -10.0));
-        let n3 = p.local_normal_at(&Tuple::new_point(-5.0, 0.0, 150.0));
+        let n1 = p.normal_at(&Tuple::new_point(0.0, 0.0, 0.0));
+        let n2 = p.normal_at(&Tuple::new_point(10.0, 0.0, -10.0));
+        let n3 = p.normal_at(&Tuple::new_point(-5.0, 0.0, 150.0));
 
         let want = &Tuple::new_vector(0.0, 1.0, 0.0);
         assert_eq!(want, &n1);
@@ -110,7 +99,7 @@ mod test {
     fn plane_intersect_with_a_ray_parallel_to_plane() {
         let p = Plane::new();
         let ray = Ray::new((0.0, 10.0, 0.0), (0.0, 0.0, 1.0));
-        let xs = p.local_intersect(&ray);
+        let xs = p.intersect(&ray);
         assert_eq!(xs.len(), 0);
     }
 
@@ -118,7 +107,7 @@ mod test {
     fn plane_intersect_with_a_coplanar_ray() {
         let p = Plane::new();
         let ray = Ray::new((0.0, 0.0, 0.0), (0.0, 0.0, 1.0));
-        let xs = p.local_intersect(&ray);
+        let xs = p.intersect(&ray);
         assert_eq!(xs.len(), 0);
     }
 
@@ -127,7 +116,7 @@ mod test {
         let p = Plane::new();
         let obj_id = p.get_id();
         let ray = Ray::new((0.0, 1.0, 0.0), (0.0, -1.0, 0.0));
-        let xs = p.local_intersect(&ray);
+        let xs = p.intersect(&ray);
         assert_eq!(xs.len(), 1);
         assert_eq!(xs[0].object.get_id(), obj_id);
     }
@@ -137,7 +126,7 @@ mod test {
         let p = Plane::new();
         let obj_id = p.get_id();
         let ray = Ray::new((0.0, -1.0, 0.0), (0.0, 1.0, 0.0));
-        let xs = p.local_intersect(&ray);
+        let xs = p.intersect(&ray);
         assert_eq!(xs.len(), 1);
         assert_eq!(xs[0].object.get_id(), obj_id);
     }

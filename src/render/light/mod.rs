@@ -50,3 +50,13 @@ impl Light {
         }
     }
 }
+
+impl PartialEq for Light {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_id() == other.get_id() && self.get_type() == other.get_type()
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.get_id() != other.get_id() || self.get_type() != other.get_type()
+    }
+}

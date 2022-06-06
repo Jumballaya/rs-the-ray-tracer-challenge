@@ -2,9 +2,8 @@ use std::sync::atomic::Ordering;
 
 use super::{Object, ObjectType, OBJECT_COUNTER};
 use crate::math::matrix::{Matrix, Transformation};
-use crate::math::tuple::TupleType;
 use crate::math::{ray::Ray, tuple::Tuple};
-use crate::render::hit::{Hittable, Intersection};
+use crate::render::intersection::Intersection;
 use crate::render::material::Material;
 
 #[derive(Debug, Clone)]
@@ -37,25 +36,11 @@ impl Sphere {
         self.cached_matrix.clone()
     }
 
-    pub fn local_normal_at(&self, object_point: &Tuple) -> Tuple {
-        let object_normal = object_point - Tuple::new_point(0.0, 0.0, 0.0);
-        let mut world_normal = &self.get_transform().inverse().transpose() * object_normal;
-        world_normal.w = 0.0;
-        world_normal.tp = TupleType::Vector;
-        world_normal.normalize()
-    }
-
-    pub fn normal_at(&self, world_point: &Tuple) -> Tuple {
-        let object_point = &self.get_transform().inverse() * world_point;
-        self.local_normal_at(&object_point)
+    pub fn normal_at(&self, local_point: &Tuple) -> Tuple {
+        local_point - Tuple::new_point(0.0, 0.0, 0.0)
     }
 
     pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let tformed_ray = ray.transform(&self.get_transform().inverse());
-        self.local_intercept(&tformed_ray)
-    }
-
-    pub fn local_intercept(&self, ray: &Ray) -> Vec<Intersection> {
         let sphere_to_ray = ray.origin - Tuple::new_point(0.0, 0.0, 0.0);
         let a = ray.direction * ray.direction;
         let b = 2.0 * (ray.direction * sphere_to_ray);
@@ -112,8 +97,8 @@ mod test {
 
     #[test]
     fn sphere_ray_intersects_at_2_points() {
-        let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
+        let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0)).transform(&s.get_transform().inverse());
         let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, 4.0));
@@ -122,8 +107,8 @@ mod test {
 
     #[test]
     fn sphere_ray_intersects_at_tangent() {
-        let r = Ray::new((0.0, 1.0, -5.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
+        let r = Ray::new((0.0, 1.0, -5.0), (0.0, 0.0, 1.0)).transform(&s.get_transform().inverse());
         let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, 5.0));
@@ -132,16 +117,16 @@ mod test {
 
     #[test]
     fn sphere_ray_misses_sphere() {
-        let r = Ray::new((0.0, 2.0, -0.5), (0.0, 0.0, 1.0));
         let s = Sphere::new();
+        let r = Ray::new((0.0, 2.0, -0.5), (0.0, 0.0, 1.0)).transform(&s.get_transform().inverse());
         let xs = s.intersect(&r);
         assert!(xs.len() == 0);
     }
 
     #[test]
     fn sphere_ray_originates_inside_sphere() {
-        let r = Ray::new((0.0, 0.0, 0.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
+        let r = Ray::new((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)).transform(&s.get_transform().inverse());
         let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, -1.0));
@@ -150,8 +135,8 @@ mod test {
 
     #[test]
     fn sphere_sphere_behind_ray() {
-        let r = Ray::new((0.0, 0.0, 5.0), (0.0, 0.0, 1.0));
         let s = Sphere::new();
+        let r = Ray::new((0.0, 0.0, 5.0), (0.0, 0.0, 1.0)).transform(&s.get_transform().inverse());
         let xs = s.intersect(&r);
         assert!(xs.len() == 2);
         assert!(float_equal(xs[0].t, -6.0));
@@ -175,9 +160,9 @@ mod test {
 
     #[test]
     fn sphere_intersecting_a_scaled_sphere_with_a_ray() {
-        let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
         let mut s = Sphere::new();
         s.set_transform(Transformation::Scale(2.0, 2.0, 2.0));
+        let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0)).transform(&s.get_transform().inverse());
         let intersections = s.intersect(&r);
         assert!(intersections.len() == 2);
         assert_eq!(intersections[0].t, 3.0);
@@ -186,9 +171,9 @@ mod test {
 
     #[test]
     fn sphere_intersecting_a_translated_sphere_with_a_ray() {
-        let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0));
         let mut s = Sphere::new();
         s.set_transform(Transformation::Translate(5.0, 0.0, 0.0));
+        let r = Ray::new((0.0, 0.0, -5.0), (0.0, 0.0, 1.0)).transform(&s.get_transform().inverse());
         let intersections = s.intersect(&r);
         assert_eq!(intersections.len(), 0);
     }
@@ -196,7 +181,7 @@ mod test {
     #[test]
     fn sphere_normal_on_a_sphere_x_axis() {
         let s = Sphere::new();
-        let p = Tuple::new_point(1.0, 0.0, 0.0);
+        let p = Tuple::new_point(1.0, 0.0, 0.0) * &s.get_transform().inverse();
         let want = Tuple::new_vector(1.0, 0.0, 0.0);
         let got = s.normal_at(&p);
         assert_eq!(got, want);
@@ -205,7 +190,7 @@ mod test {
     #[test]
     fn sphere_normal_on_a_sphere_y_axis() {
         let s = Sphere::new();
-        let p = Tuple::new_point(0.0, 1.0, 0.0);
+        let p = Tuple::new_point(0.0, 1.0, 0.0) * &s.get_transform().inverse();
         let want = Tuple::new_vector(0.0, 1.0, 0.0);
         let got = s.normal_at(&p);
         assert_eq!(got, want);
@@ -214,7 +199,7 @@ mod test {
     #[test]
     fn sphere_normal_on_a_sphere_z_axis() {
         let s = Sphere::new();
-        let p = Tuple::new_point(0.0, 0.0, 1.0);
+        let p = Tuple::new_point(0.0, 0.0, 1.0) * &s.get_transform().inverse();
         let want = Tuple::new_vector(0.0, 0.0, 1.0);
         let got = s.normal_at(&p);
         assert_eq!(got, want);
@@ -224,7 +209,7 @@ mod test {
     fn sphere_normal_on_a_sphere_non_axial() {
         let root_3_3 = ((3.0 as f64).sqrt()) / 3.0;
         let s = Sphere::new();
-        let p = Tuple::new_point(root_3_3, root_3_3, root_3_3);
+        let p = Tuple::new_point(root_3_3, root_3_3, root_3_3) * &s.get_transform().inverse();
         let want = Tuple::new_vector(root_3_3, root_3_3, root_3_3);
         let got = s.normal_at(&p);
         assert_eq!(got, want);
@@ -234,7 +219,7 @@ mod test {
     fn sphere_normal_is_normalized_vector() {
         let root_3_3 = ((3.0 as f64).sqrt()) / 3.0;
         let s = Sphere::new();
-        let p = Tuple::new_point(root_3_3, root_3_3, root_3_3);
+        let p = Tuple::new_point(root_3_3, root_3_3, root_3_3) * &s.get_transform().inverse();
         let want = Tuple::new_vector(root_3_3, root_3_3, root_3_3).normalize();
         let got = s.normal_at(&p);
         assert_eq!(got, want);

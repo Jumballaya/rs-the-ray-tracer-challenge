@@ -59,6 +59,16 @@ impl PointLight {
     }
 }
 
+impl PartialEq for PointLight {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_id() == other.get_id() && self.get_type() == other.get_type()
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.get_id() != other.get_id() || self.get_type() != other.get_type()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{draw::color::Color, math::tuple::Tuple};
