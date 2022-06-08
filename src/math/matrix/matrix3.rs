@@ -16,6 +16,7 @@ impl Matrix3 {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_data(mut self, data: [[f64; 3]; 3]) -> Self {
         self.data = data;
         self

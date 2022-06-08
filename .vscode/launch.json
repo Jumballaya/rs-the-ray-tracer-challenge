@@ -7,15 +7,14 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'raytracer'",
+      "name": "Debug executable 'chapter9'",
       "cargo": {
         "args": [
           "build",
-          "--bin=raytracer",
-          "--package=raytracer"
+          "--bin=chapter9"
         ],
         "filter": {
-          "name": "raytracer",
+          "name": "chapter9",
           "kind": "bin"
         }
       },
@@ -25,17 +24,17 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'raytracer'",
+      "name": "Debug Lib unit tests",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=raytracer",
+          "--lib",
           "--package=raytracer"
         ],
         "filter": {
           "name": "raytracer",
-          "kind": "bin"
+          "kind": "lib"
         }
       },
       "args": [],

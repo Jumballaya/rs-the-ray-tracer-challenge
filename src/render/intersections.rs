@@ -83,7 +83,7 @@ impl<'a> Intersections<'a> {
     }
 
     pub fn get_hit(&self) -> Option<&Intersection> {
-        self.intersections.iter().find(|int| int.t() >= 0.0)
+        self.iter().find(|int| int.t() > 0.0)
     }
 
     pub fn iter(&self) -> slice::Iter<Intersection> {

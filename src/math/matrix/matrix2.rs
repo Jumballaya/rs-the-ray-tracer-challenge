@@ -14,6 +14,7 @@ impl Matrix2 {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_data(mut self, data: [[f64; 2]; 2]) -> Self {
         self.data = data;
         self

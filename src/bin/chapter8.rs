@@ -82,8 +82,8 @@ fn create_right() -> Object {
 }
 
 fn main() -> std::io::Result<()> {
-    let width: usize = 100;
-    let height: usize = 50;
+    let width: usize = 10_000;
+    let height: usize = 5000;
     let mut world = World::new();
     world.add_light(create_light());
     world.add_object(create_floor());

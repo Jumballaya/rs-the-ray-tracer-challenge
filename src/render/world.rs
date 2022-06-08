@@ -66,7 +66,6 @@ impl World {
         let ray = Ray::new(*point, direction);
         let mut intersections = Intersections::new();
         self.intersect(&ray, &self.objects, &mut intersections);
-
         if let Some(hit) = intersections.get_hit() {
             return hit.t() < distance;
         }
@@ -76,8 +75,8 @@ impl World {
     pub fn color_at(&self, ray: &Ray) -> Color {
         let mut intersections = Intersections::new();
         self.intersect(ray, &self.objects, &mut intersections);
-        if intersections.len() > 0 {
-            let comp = HitComputation::new(&intersections[0], ray);
+        if let Some(hit) = intersections.get_hit() {
+            let comp = HitComputation::new(hit, ray);
             self.shade_hit(&comp)
         } else {
             Color::black()
