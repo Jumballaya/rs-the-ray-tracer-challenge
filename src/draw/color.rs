@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::ops;
 
-use crate::math::float_equal;
+use crate::math::epsilon::ApproxEq;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
@@ -25,6 +25,46 @@ impl Color {
     pub fn as_tuple(&self) -> (f64, f64, f64) {
         (self.r, self.g, self.b)
     }
+
+    pub fn black() -> Color {
+        Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+        }
+    }
+
+    pub fn white() -> Color {
+        Color {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+        }
+    }
+
+    pub fn red() -> Color {
+        Color {
+            r: 1.0,
+            g: 0.0,
+            b: 0.0,
+        }
+    }
+
+    pub fn green() -> Color {
+        Color {
+            r: 0.0,
+            g: 1.0,
+            b: 0.0,
+        }
+    }
+
+    pub fn blue() -> Color {
+        Color {
+            r: 0.0,
+            g: 0.0,
+            b: 1.0,
+        }
+    }
 }
 
 impl Display for Color {
@@ -35,17 +75,15 @@ impl Display for Color {
 
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
-        float_equal(self.r, other.r) && float_equal(self.g, other.g) && float_equal(self.b, other.b)
+        self.r.approx_eq(other.r) && self.b.approx_eq(other.b) && self.g.approx_eq(other.g)
     }
 
     fn ne(&self, other: &Self) -> bool {
-        !(float_equal(self.r, other.r)
-            && float_equal(self.g, other.g)
-            && float_equal(self.b, other.b))
+        !(self.r.approx_eq(other.r) && self.b.approx_eq(other.b) && self.g.approx_eq(other.g))
     }
 }
 
-impl ops::Add<Color> for Color {
+impl ops::Add for Color {
     type Output = Color;
 
     fn add(self, rhs: Color) -> Self::Output {
@@ -53,7 +91,7 @@ impl ops::Add<Color> for Color {
     }
 }
 
-impl ops::Sub<Color> for Color {
+impl ops::Sub for Color {
     type Output = Color;
 
     fn sub(self, rhs: Color) -> Self::Output {
@@ -61,47 +99,15 @@ impl ops::Sub<Color> for Color {
     }
 }
 
-impl ops::Mul<Color> for Color {
+impl ops::Mul for Color {
     type Output = Color;
 
     fn mul(self, rhs: Color) -> Self::Output {
-        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
-    }
-}
-
-impl ops::Mul<&Color> for Color {
-    type Output = Color;
-
-    fn mul(self, rhs: &Color) -> Self::Output {
-        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
-    }
-}
-
-impl ops::Mul<Color> for &Color {
-    type Output = Color;
-
-    fn mul(self, rhs: Color) -> Self::Output {
-        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
-    }
-}
-
-impl ops::Mul<&Color> for &Color {
-    type Output = Color;
-
-    fn mul(self, rhs: &Color) -> Self::Output {
         Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
     }
 }
 
 impl ops::Mul<f64> for Color {
-    type Output = Color;
-
-    fn mul(self, rhs: f64) -> Self::Output {
-        Color::new(self.r * rhs, self.g * rhs, self.b * rhs)
-    }
-}
-
-impl ops::Mul<f64> for &Color {
     type Output = Color;
 
     fn mul(self, rhs: f64) -> Self::Output {
@@ -119,16 +125,16 @@ impl ops::Mul<Color> for f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::math::float_equal;
+    use crate::math::epsilon::ApproxEq;
 
     use super::Color;
 
     #[test]
     fn color_can_create_color() {
         let c = Color::new(-0.5, 0.4, 1.7);
-        assert!(float_equal(c.r, -0.5));
-        assert!(float_equal(c.g, 0.4));
-        assert!(float_equal(c.b, 1.7));
+        assert!(c.r.approx_eq(-0.5));
+        assert!(c.g.approx_eq(0.4));
+        assert!(c.b.approx_eq(1.7));
     }
 
     #[test]

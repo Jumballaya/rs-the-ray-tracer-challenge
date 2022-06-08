@@ -1,40 +1,27 @@
-use std::sync::atomic::Ordering;
+use crate::math::point::Point;
+use crate::math::vector::Vector;
+use crate::{draw::color::Color, render::material::Material};
 
-use crate::{draw::color::Color, math::tuple::Tuple, render::material::Material};
-
-use super::{LightType, LIGHT_COUNTER};
-
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PointLight {
-    tp: LightType,
-    id: usize,
-    pub position: Tuple,
+    pub position: Point,
     pub intensity: Color,
 }
 
 impl PointLight {
-    pub fn new(position: Tuple, intensity: Color) -> Self {
+    pub fn new(position: Point, intensity: Color) -> Self {
         Self {
-            tp: LightType::Point,
-            id: LIGHT_COUNTER.fetch_add(1, Ordering::SeqCst),
             position,
             intensity,
         }
     }
 
-    pub fn get_id(&self) -> usize {
-        self.id
-    }
-
-    pub fn get_type(&self) -> LightType {
-        self.tp
-    }
-
     pub fn lighting(
         &self,
         material: &Material,
-        point: Tuple,
-        eye_vector: Tuple,
-        normal_vector: Tuple,
+        point: Point,
+        eye_vector: Vector,
+        normal_vector: Vector,
         in_shadow: bool,
     ) -> Color {
         let effective_color = material.color * self.intensity;
@@ -59,29 +46,19 @@ impl PointLight {
     }
 }
 
-impl PartialEq for PointLight {
-    fn eq(&self, other: &Self) -> bool {
-        self.get_id() == other.get_id() && self.get_type() == other.get_type()
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.get_id() != other.get_id() || self.get_type() != other.get_type()
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use crate::{draw::color::Color, math::tuple::Tuple};
+    use super::*;
 
-    use super::PointLight;
+    use crate::math::tuple::Tuple;
 
     #[test]
     fn light_point_light_has_pos_and_intensity() {
         let int = Color::new(1.0, 1.0, 1.0);
-        let pos = Tuple::new_point(0.0, 0.0, 0.0);
+        let pos = Point::new(0.0, 0.0, 0.0);
         let light = PointLight::new(pos, int);
 
-        let want_pos = Tuple::new_point(0.0, 0.0, 0.0);
+        let want_pos = Point::new(0.0, 0.0, 0.0);
         let want_int = Color::new(1.0, 1.0, 1.0);
 
         assert_eq!(light.intensity, want_int);

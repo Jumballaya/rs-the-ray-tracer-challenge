@@ -1,44 +1,51 @@
-use super::{matrix::Matrix, tuple::Tuple};
+use super::{matrix::Matrix, point::Point, transformation::Transformable, vector::Vector};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ray {
-    pub origin: Tuple,    // Point
-    pub direction: Tuple, // Vector
+    pub origin: Point,
+    pub direction: Vector,
+    transformation: Matrix,
 }
 
 impl Ray {
-    pub fn new(origin: (f64, f64, f64), direction: (f64, f64, f64)) -> Self {
+    pub fn new(origin: Point, direction: Vector) -> Self {
         Self {
-            origin: Tuple::new_point(origin.0, origin.1, origin.2),
-            direction: Tuple::new_vector(direction.0, direction.1, direction.2),
+            origin,
+            direction,
+            transformation: Matrix::identity(),
         }
     }
 
-    pub fn position_at(&self, t: f64) -> Tuple {
+    pub fn position_at(&self, t: f64) -> Point {
         self.origin + (self.direction * t)
     }
+}
 
-    pub fn transform(&self, tform: &Matrix) -> Ray {
+impl Transformable for Ray {
+    fn with_transform(self, tform: Matrix) -> Ray {
         Ray {
-            origin: self.origin * tform,
-            direction: self.direction * tform,
+            origin: tform * self.origin,
+            direction: tform * self.direction,
+            transformation: tform * self.get_transform(),
         }
+    }
+
+    fn get_transform(&self) -> Matrix {
+        self.transformation
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::math::{
-        matrix::{Matrix, Transformation},
-        ray::Ray,
-        tuple::Tuple,
-    };
+
+    use super::{Point, Ray, Transformable, Vector};
+    use crate::math::tuple::Tuple;
 
     #[test]
     fn ray_can_create_ray() {
-        let origin = Tuple::new_point(1.0, 2.0, 3.0);
-        let direction = Tuple::new_vector(4.0, 5.0, 6.0);
-        let r = Ray::new((1.0, 2.0, 3.0), (4.0, 5.0, 6.0));
+        let origin = Point::new(1.0, 2.0, 3.0);
+        let direction = Vector::new(4.0, 5.0, 6.0);
+        let r = Ray::new(origin, direction);
 
         assert_eq!(r.origin, origin);
         assert_eq!(r.direction, direction);
@@ -46,12 +53,12 @@ mod test {
 
     #[test]
     fn ray_can_get_position_along_ray() {
-        let r = Ray::new((2.0, 3.0, 4.0), (1.0, 0.0, 0.0));
+        let r = Ray::new(Point::new(2.0, 3.0, 4.0), Vector::new(1.0, 0.0, 0.0));
 
-        let want1 = Tuple::new_point(2.0, 3.0, 4.0);
-        let want2 = Tuple::new_point(3.0, 3.0, 4.0);
-        let want3 = Tuple::new_point(1.0, 3.0, 4.0);
-        let want4 = Tuple::new_point(4.5, 3.0, 4.0);
+        let want1 = Point::new(2.0, 3.0, 4.0);
+        let want2 = Point::new(3.0, 3.0, 4.0);
+        let want3 = Point::new(1.0, 3.0, 4.0);
+        let want4 = Point::new(4.5, 3.0, 4.0);
 
         let got1 = r.position_at(0.0);
         let got2 = r.position_at(1.0);
@@ -66,19 +73,18 @@ mod test {
 
     #[test]
     fn ray_can_transform_translate_a_ray() {
-        let r = Ray::new((1.0, 2.0, 3.0), (0.0, 1.0, 0.0));
-        let translate = Transformation::Translate(3.0, 4.0, 5.0);
-        let r2 = r.transform(&Matrix::transform(&translate));
-        assert_eq!(r2.origin, Tuple::new_point(4.0, 6.0, 8.0));
-        assert_eq!(r2.direction, Tuple::new_vector(0.0, 1.0, 0.0));
+        let r = Ray::new(Point::new(1.0, 2.0, 3.0), Vector::new(0.0, 1.0, 0.0))
+            .translate(3.0, 4.0, 5.0);
+
+        assert_eq!(r.origin, Point::new(4.0, 6.0, 8.0));
+        assert_eq!(r.direction, Vector::new(0.0, 1.0, 0.0));
     }
 
     #[test]
     fn ray_can_transform_scale_a_ray() {
-        let r = Ray::new((1.0, 2.0, 3.0), (0.0, 1.0, 0.0));
-        let translate = Transformation::Scale(2.0, 3.0, 4.0);
-        let r2 = r.transform(&Matrix::transform(&translate));
-        assert_eq!(r2.origin, Tuple::new_point(2.0, 6.0, 12.0));
-        assert_eq!(r2.direction, Tuple::new_vector(0.0, 3.0, 0.0));
+        let r =
+            Ray::new(Point::new(1.0, 2.0, 3.0), Vector::new(0.0, 1.0, 0.0)).scale(2.0, 3.0, 4.0);
+        assert_eq!(r.origin, Point::new(2.0, 6.0, 12.0));
+        assert_eq!(r.direction, Vector::new(0.0, 3.0, 0.0));
     }
 }
