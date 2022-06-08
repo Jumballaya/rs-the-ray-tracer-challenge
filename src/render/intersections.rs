@@ -115,6 +115,7 @@ pub struct HitComputation<'a> {
     pub object: &'a Object,
     pub point: Point,
     pub eye: Vector,
+    pub reflect: Vector,
     pub normal: Vector,
     pub inside: bool,
     pub over_point: Point,
@@ -137,6 +138,7 @@ impl<'a> HitComputation<'a> {
             }
         };
 
+        let reflect = ray.direction.reflect(&normal);
         let over_point = point + normal * EPSILON;
 
         Self {
@@ -146,6 +148,7 @@ impl<'a> HitComputation<'a> {
             eye,
             normal,
             inside,
+            reflect,
             over_point,
         }
     }
@@ -278,5 +281,20 @@ mod test {
 
         assert!(comp.over_point.z() < -EPSILON / 2.0);
         assert!(comp.point.z() > comp.over_point.z());
+    }
+
+    #[test]
+    fn precompute_reflection_vector() {
+        let root2 = f64::sqrt(2.0);
+        let root_2_2 = root2 / 2.0;
+        let obj = Object::new_plane();
+        let ray = Ray::new(
+            Point::new(0.0, 1.0, -1.0),
+            Vector::new(0.0, -root_2_2, root_2_2),
+        );
+        let int = Intersection::new(root2, &obj);
+        let comp = HitComputation::new(&int, &ray);
+        let want = Vector::new(0.0, root_2_2, root_2_2);
+        assert_eq!(want, comp.reflect);
     }
 }

@@ -134,7 +134,14 @@ mod test {
             .with_diffuse(0.9)
             .with_specular(0.9)
             .with_shininess(200.0);
-        let want = Material::new(Pattern::new_solid(Color::black()), 1.0, 0.9, 0.9, 200.0);
+        let want = Material::new(
+            Pattern::new_solid(Color::black()),
+            1.0,
+            0.9,
+            0.9,
+            200.0,
+            0.0,
+        );
         let got = obj.get_material();
         assert_eq!(got, want);
     }

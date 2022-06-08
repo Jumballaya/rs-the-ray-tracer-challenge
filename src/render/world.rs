@@ -1,6 +1,8 @@
 use crate::{
     draw::{canvas::Canvas, color::Color},
-    math::{point::Point, ray::Ray, transformation::Transformable, tuple::Tuple},
+    math::{
+        epsilon::ApproxEq, point::Point, ray::Ray, transformation::Transformable, tuple::Tuple,
+    },
     render::{
         intersections::Intersections, light::Light, lights::point_light::PointLight,
         material::Materialable, object::Object, pattern::Pattern,
@@ -8,6 +10,8 @@ use crate::{
 };
 
 use super::{camera::Camera, intersections::HitComputation};
+
+const REMAINING: usize = 5;
 
 #[derive(Debug)]
 pub struct World {
@@ -42,24 +46,26 @@ impl World {
         }
     }
 
-    pub fn shade_hit(&self, comp: &HitComputation) -> Color {
+    pub fn shade_hit(&self, comp: &HitComputation, remaining: usize) -> Color {
         if self.lights.len() == 0 {
             return Color::black();
         }
         self.lights.iter().fold(Color::black(), |acc, light| {
             let material = comp.object.get_material();
             let over_point = comp.over_point;
-            let in_shadow = self.is_shadowed(&comp.over_point);
             let eye_vector = comp.eye;
             let normal_vector = comp.normal;
-            acc + light.lighting(
+            let in_shadow = self.is_shadowed(&comp.over_point);
+            let surface = light.lighting(
                 comp.object,
                 &material,
                 over_point,
                 eye_vector,
                 normal_vector,
                 in_shadow,
-            )
+            );
+            let reflected = self.reflected_color(&comp, remaining);
+            acc + surface + reflected
         })
     }
 
@@ -79,15 +85,27 @@ impl World {
         false
     }
 
-    pub fn color_at(&self, ray: &Ray) -> Color {
+    pub fn color_at(&self, ray: &Ray, remaining: usize) -> Color {
         let mut intersections = Intersections::new();
         self.intersect(ray, &self.objects, &mut intersections);
         if let Some(hit) = intersections.get_hit() {
             let comp = HitComputation::new(hit, ray);
-            self.shade_hit(&comp)
+            self.shade_hit(&comp, remaining)
         } else {
             Color::black()
         }
+    }
+
+    pub fn reflected_color(&self, comp: &HitComputation, remaining: usize) -> Color {
+        if remaining < 1 {
+            return Color::black();
+        }
+        if comp.object.get_material().reflective.approx_eq(0.0) {
+            return Color::black();
+        }
+        let reflect_ray = Ray::new(comp.over_point, comp.reflect);
+        let color = self.color_at(&reflect_ray, remaining - 1);
+        color * comp.object.get_material().reflective
     }
 
     pub fn render(&self, camera: &Camera) -> Canvas {
@@ -98,7 +116,7 @@ impl World {
         for y in 0..height {
             for x in 0..width {
                 let ray = camera.ray_for_pixel(x, y);
-                let color = self.color_at(&ray);
+                let color = self.color_at(&ray, REMAINING);
                 canvas.set_pixel((x, y), &color);
             }
         }
@@ -146,6 +164,7 @@ mod test {
             object::Object,
         },
     };
+
     #[test]
     fn new_world_has_no_objects_or_lights() {
         let world = World::new();
@@ -180,7 +199,7 @@ mod test {
         let ray = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 0.0, 1.0));
         let intersection = Intersection::new(4.0, &world.objects[0]);
         let comp = HitComputation::new(&intersection, &ray);
-        let got = world.shade_hit(&comp);
+        let got = world.shade_hit(&comp, 5);
         let want = Color::new(0.38066, 0.47583, 0.2855);
         assert_eq!(got, want);
     }
@@ -194,7 +213,7 @@ mod test {
         let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
         let intersection = Intersection::new(0.5, &world.objects[1]);
         let comp = HitComputation::new(&intersection, &ray);
-        let got = world.shade_hit(&comp);
+        let got = world.shade_hit(&comp, 5);
         let want = Color::new(0.90498, 0.90498, 0.90498);
         assert_eq!(got, want);
     }
@@ -203,7 +222,7 @@ mod test {
     fn color_when_ray_misses() {
         let w = World::default();
         let r = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 1.0, 0.0));
-        let c = w.color_at(&r);
+        let c = w.color_at(&r, 5);
         assert_eq!(c, Color::new(0.0, 0.0, 0.0));
     }
 
@@ -211,7 +230,7 @@ mod test {
     fn color_when_ray_hits() {
         let w = World::default();
         let r = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 0.0, 1.0));
-        let c = w.color_at(&r);
+        let c = w.color_at(&r, 5);
         assert_eq!(c, Color::new(0.38066, 0.47583, 0.2855));
     }
 
@@ -230,7 +249,7 @@ mod test {
         w.add_object(obj2);
 
         let r = Ray::new(Point::new(0.0, 0.0, 0.75), Vector::new(0.0, 0.0, -1.0));
-        let c = w.color_at(&r);
+        let c = w.color_at(&r, 5);
         assert_eq!(
             c,
             w.objects[1]
@@ -285,7 +304,114 @@ mod test {
         let intersection = Intersection::new(4.0, &s2_copy);
 
         let comp = HitComputation::new(&intersection, &ray);
-        let color = w.shade_hit(&comp);
+        let color = w.shade_hit(&comp, 5);
         assert_eq!(color, Color::new(0.1, 0.1, 0.1));
+    }
+
+    #[test]
+    fn reflected_color_for_non_reflective_material() {
+        let w = World::default();
+        let r = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
+        let obj = w.objects[1].clone().with_ambient(1.0);
+        let int = Intersection::new(1.0, &obj);
+        let comp = HitComputation::new(&int, &r);
+        let got = w.reflected_color(&comp, 5);
+        let want = Color::black();
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn reflected_color_for_reflective_material() {
+        let root2 = f64::sqrt(2.0);
+        let root_2_2 = root2 / 2.0;
+
+        let mut w = World::default();
+
+        w.add_object(
+            Object::new_plane()
+                .with_material(Material::default().with_reflective(0.5))
+                .translate(0.0, -1.0, 0.0),
+        );
+
+        let object = &w.objects.last().unwrap();
+
+        let ray = Ray::new(
+            Point::new(0.0, 0.0, -3.0),
+            Vector::new(0.0, -root_2_2, root_2_2),
+        );
+        let int = Intersection::new(root2, &object);
+        let comp = HitComputation::new(&int, &ray);
+        let want = Color::new(0.190346, 0.23793, 0.142759);
+        let got = w.reflected_color(&comp, 5);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn shade_hit_with_reflective_material() {
+        let root2 = f64::sqrt(2.0);
+        let root_2_2 = root2 / 2.0;
+
+        let mut w = World::default();
+        w.add_object(
+            Object::new_plane()
+                .with_reflective(0.5)
+                .translate(0.0, -1.0, 0.0),
+        );
+        let object = &w.objects.last().unwrap();
+        let ray = Ray::new(
+            Point::new(0.0, 0.0, -3.0),
+            Vector::new(0.0, -root_2_2, root_2_2),
+        );
+        let int = Intersection::new(root2, &object);
+        let comp = HitComputation::new(&int, &ray);
+        let want = Color::new(0.87677, 0.92436, 0.82918);
+        let got = w.shade_hit(&comp, 5);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn mutually_reflective_surfaces() {
+        let mut w = World::new();
+        w.add_light(Light::Point(PointLight::new(
+            Point::new(0.0, 0.0, 0.0),
+            Color::new(1.0, 1.0, 1.0),
+        )));
+        w.add_object(
+            Object::new_plane()
+                .with_reflective(1.0)
+                .translate(0.0, -1.0, 0.0),
+        );
+        w.add_object(
+            Object::new_plane()
+                .with_reflective(1.0)
+                .translate(0.0, 1.0, 0.0),
+        );
+
+        let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 1.0, 0.0));
+
+        w.color_at(&ray, 5);
+    }
+
+    #[test]
+    fn reflected_color_at_max_recursive_depth() {
+        let root2 = f64::sqrt(2.0);
+        let root_2_2 = root2 / 2.0;
+
+        let mut w = World::default();
+        w.add_object(
+            Object::new_plane()
+                .with_reflective(0.5)
+                .translate(0.0, -1.0, 0.0),
+        );
+        let object = &w.objects.last().unwrap();
+        let ray = Ray::new(
+            Point::new(0.0, 0.0, -3.0),
+            Vector::new(0.0, -root_2_2, root_2_2),
+        );
+        let int = Intersection::new(root2, &object);
+        let comp = HitComputation::new(&int, &ray);
+        let want = Color::black();
+        let got = w.reflected_color(&comp, 0);
+        assert_eq!(got, want);
     }
 }

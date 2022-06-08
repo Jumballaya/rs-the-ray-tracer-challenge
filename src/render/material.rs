@@ -6,6 +6,7 @@ pub struct Material {
     pub diffuse: f64,
     pub specular: f64,
     pub shininess: f64,
+    pub reflective: f64,
     pub pattern: Pattern,
 }
 
@@ -16,6 +17,7 @@ impl Material {
         diffuse: f64,
         specular: f64,
         shininess: f64,
+        reflective: f64,
     ) -> Self {
         Self {
             ambient,
@@ -23,7 +25,32 @@ impl Material {
             specular,
             shininess,
             pattern,
+            reflective,
         }
+    }
+
+    pub fn with_pattern(self, pattern: Pattern) -> Self {
+        Self { pattern, ..self }
+    }
+
+    pub fn with_ambient(self, ambient: f64) -> Self {
+        Self { ambient, ..self }
+    }
+
+    pub fn with_diffuse(self, diffuse: f64) -> Self {
+        Self { diffuse, ..self }
+    }
+
+    pub fn with_specular(self, specular: f64) -> Self {
+        Self { specular, ..self }
+    }
+
+    pub fn with_shininess(self, shininess: f64) -> Self {
+        Self { shininess, ..self }
+    }
+
+    pub fn with_reflective(self, reflective: f64) -> Self {
+        Self { reflective, ..self }
     }
 }
 
@@ -34,6 +61,7 @@ impl Default for Material {
             diffuse: 0.9,
             specular: 0.9,
             shininess: 200.0,
+            reflective: 0.0,
             pattern: Pattern::default(),
         }
     }
@@ -87,13 +115,22 @@ pub trait Materialable {
         mat.shininess = shininess;
         self.with_material(mat)
     }
+
+    fn with_reflective(self, reflective: f64) -> Self
+    where
+        Self: Sized,
+    {
+        let mut mat = self.get_material();
+        mat.reflective = reflective;
+        self.with_material(mat)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
         draw::color::Color,
-        math::{point::Point, tuple::Tuple, vector::Vector},
+        math::{epsilon::ApproxEq, point::Point, tuple::Tuple, vector::Vector},
         render::{light::Light, lights::point_light::PointLight, object::Object, pattern::Pattern},
     };
 
@@ -206,6 +243,7 @@ mod test {
             0.0,
             0.0,
             200.0,
+            0.0,
         );
         let eye_vector = Vector::new(0.0, 0.0, -1.0);
         let normal_vector = Vector::new(0.0, 0.0, -1.0);
@@ -231,5 +269,11 @@ mod test {
 
         assert_eq!(c1, Color::white());
         assert_eq!(c2, Color::black());
+    }
+
+    #[test]
+    fn reflectivity_for_default_material() {
+        let m = Material::default();
+        assert!(m.reflective.approx_eq(0.0));
     }
 }
