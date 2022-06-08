@@ -19,11 +19,14 @@ pub mod render {
     pub mod light;
     pub mod material;
     pub mod object;
+    pub mod shape;
     pub mod world;
+
+    pub mod pattern;
+    pub mod patterns;
 
     pub mod shapes {
         pub mod plane;
-        pub mod shape;
         pub mod sphere;
         pub mod test_shape;
     }

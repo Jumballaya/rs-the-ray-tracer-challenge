@@ -1,5 +1,6 @@
 use crate::math::point::Point;
 use crate::math::vector::Vector;
+use crate::render::object::Object;
 use crate::{draw::color::Color, render::material::Material};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -18,13 +19,14 @@ impl PointLight {
 
     pub fn lighting(
         &self,
+        object: &Object,
         material: &Material,
         point: Point,
         eye_vector: Vector,
         normal_vector: Vector,
         in_shadow: bool,
     ) -> Color {
-        let effective_color = material.color * self.intensity;
+        let effective_color = material.pattern.pattern_at_object(object, &point) * self.intensity;
         let light_vector = (self.position - point).normalize();
         let ambient = effective_color * material.ambient;
         let light_dot_normal = light_vector * normal_vector;

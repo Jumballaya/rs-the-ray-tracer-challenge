@@ -9,6 +9,7 @@ use raytracer::{
         lights::point_light::PointLight,
         material::{Material, Materialable},
         object::Object,
+        pattern::Pattern,
         world::World,
     },
 };
@@ -22,7 +23,7 @@ fn create_light() -> Light {
 
 fn create_floor_mat() -> Material {
     let mut mat = Material::default();
-    mat.color = Color::new(1.0, 0.9, 0.9);
+    mat.pattern = Pattern::new_solid(Color::new(1.0, 0.9, 0.9));
     mat.specular = 0.0;
     mat
 }
@@ -54,7 +55,7 @@ fn create_right_wall() -> Object {
 fn create_left() -> Object {
     Object::new_sphere()
         .translate(-0.5, 1.0, 0.5)
-        .with_color(Color::new(0.1, 1.0, 0.5))
+        .with_pattern(Pattern::new_solid(Color::new(0.1, 1.0, 0.5)))
         .with_diffuse(0.7)
         .with_specular(0.3)
 }
@@ -63,7 +64,7 @@ fn create_middle() -> Object {
     Object::new_sphere()
         .scale(0.5, 0.5, 0.5)
         .translate(1.5, 0.5, -0.5)
-        .with_color(Color::new(0.5, 1.0, 0.1))
+        .with_pattern(Pattern::new_solid(Color::new(0.5, 1.0, 0.1)))
         .with_diffuse(0.7)
         .with_specular(0.3)
 }
@@ -72,7 +73,7 @@ fn create_right() -> Object {
     Object::new_sphere()
         .scale(0.33, 0.33, 0.33)
         .translate(-1.5, 0.33, -0.75)
-        .with_color(Color::new(1.0, 0.8, 0.1))
+        .with_pattern(Pattern::new_solid(Color::new(1.0, 0.8, 0.1)))
         .with_diffuse(0.7)
         .with_specular(0.3)
 }

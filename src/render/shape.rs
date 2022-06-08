@@ -3,7 +3,7 @@ use crate::{
     render::{intersections::Intersections, object::Object},
 };
 
-use super::{plane::Plane, sphere::Sphere, test_shape::TestShape};
+use crate::render::shapes::{plane::Plane, sphere::Sphere, test_shape::TestShape};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {

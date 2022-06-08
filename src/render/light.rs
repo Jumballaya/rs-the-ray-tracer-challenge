@@ -4,6 +4,7 @@ use crate::math::vector::Vector;
 use crate::render::material::Material;
 
 use super::lights::point_light::PointLight;
+use super::object::Object;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Light {
@@ -19,6 +20,7 @@ impl Light {
 
     pub fn lighting(
         &self,
+        object: &Object,
         material: &Material,
         point: Point,
         eye_vector: Vector,
@@ -26,7 +28,14 @@ impl Light {
         in_shadow: bool,
     ) -> Color {
         match self {
-            Self::Point(p) => p.lighting(material, point, eye_vector, normal_vector, in_shadow),
+            Self::Point(p) => p.lighting(
+                object,
+                material,
+                point,
+                eye_vector,
+                normal_vector,
+                in_shadow,
+            ),
         }
     }
 }

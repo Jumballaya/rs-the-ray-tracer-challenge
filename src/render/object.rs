@@ -1,9 +1,10 @@
-use super::shapes::{plane::Plane, shape::Shape, sphere::Sphere, test_shape::TestShape};
+use super::shapes::{plane::Plane, sphere::Sphere, test_shape::TestShape};
 use crate::{
     math::{matrix::Matrix, point::Point, ray::Ray, transformation::Transformable, vector::Vector},
     render::{
         intersections::Intersections,
         material::{Material, Materialable},
+        shape::Shape,
     },
 };
 
@@ -58,6 +59,10 @@ impl Object {
         let local_ray = ray.with_transform(self.inv_transformation);
         self.shape.intersect(&local_ray, self, intersections);
     }
+
+    pub fn get_transform_inv(&self) -> Matrix {
+        self.inv_transformation
+    }
 }
 
 impl Transformable for Object {
@@ -100,6 +105,7 @@ mod test {
     use crate::math::transformation::{translate, Transformable};
     use crate::math::tuple::Tuple;
     use crate::render::object::Object;
+    use crate::render::pattern::Pattern;
 
     #[test]
     fn default_object_tfrom_is_ident() {
@@ -123,12 +129,12 @@ mod test {
     #[test]
     fn may_be_assigned_a_material() {
         let obj = Object::new_test_shape()
-            .with_color(Color::black())
+            .with_pattern(Pattern::new_solid(Color::black()))
             .with_ambient(1.0)
             .with_diffuse(0.9)
             .with_specular(0.9)
             .with_shininess(200.0);
-        let want = Material::new(Color::new(0.0, 0.0, 0.0), 1.0, 0.9, 0.9, 200.0);
+        let want = Material::new(Pattern::new_solid(Color::black()), 1.0, 0.9, 0.9, 200.0);
         let got = obj.get_material();
         assert_eq!(got, want);
     }

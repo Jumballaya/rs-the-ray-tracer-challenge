@@ -3,7 +3,7 @@ use crate::{
     math::{point::Point, ray::Ray, transformation::Transformable, tuple::Tuple},
     render::{
         intersections::Intersections, light::Light, lights::point_light::PointLight,
-        material::Materialable, object::Object,
+        material::Materialable, object::Object, pattern::Pattern,
     },
 };
 
@@ -52,7 +52,14 @@ impl World {
             let in_shadow = self.is_shadowed(&comp.over_point);
             let eye_vector = comp.eye;
             let normal_vector = comp.normal;
-            acc + light.lighting(&material, over_point, eye_vector, normal_vector, in_shadow)
+            acc + light.lighting(
+                comp.object,
+                &material,
+                over_point,
+                eye_vector,
+                normal_vector,
+                in_shadow,
+            )
         })
     }
 
@@ -108,7 +115,7 @@ impl Default for World {
         ));
 
         let s1 = Object::new_sphere()
-            .with_color(Color::new(0.8, 1.0, 0.6))
+            .with_pattern(Pattern::new_solid(Color::new(0.8, 1.0, 0.6)))
             .with_diffuse(0.7)
             .with_specular(0.2);
         let s2 = Object::new_sphere().scale(0.5, 0.5, 0.5);
@@ -224,7 +231,13 @@ mod test {
 
         let r = Ray::new(Point::new(0.0, 0.0, 0.75), Vector::new(0.0, 0.0, -1.0));
         let c = w.color_at(&r);
-        assert_eq!(c, w.objects[1].get_material().color);
+        assert_eq!(
+            c,
+            w.objects[1]
+                .get_material()
+                .pattern
+                .pattern_at(&Point::new(0.0, 0.0, 0.0))
+        );
     }
 
     #[test]

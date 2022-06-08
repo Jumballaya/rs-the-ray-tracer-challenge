@@ -3,7 +3,7 @@ use raytracer::{
     math::{point::Point, ray::Ray, tuple::Tuple},
     render::{
         intersections::Intersections, light::Light, lights::point_light::PointLight,
-        material::Materialable, object::Object,
+        material::Materialable, object::Object, pattern::Pattern,
     },
 };
 
@@ -13,7 +13,7 @@ const WALL: f64 = 7.0;
 fn main() -> std::io::Result<()> {
     let mut canvas = Canvas::new(SIZE, SIZE);
 
-    let obj = Object::new_sphere().with_color(Color::new(1.0, 0.2, 1.0));
+    let obj = Object::new_sphere().with_pattern(Pattern::new_solid(Color::new(1.0, 0.2, 1.0)));
     let light = Light::Point(PointLight::new(
         Point::new(-10.0, 10.0, -10.0),
         Color::white(),
@@ -37,7 +37,14 @@ fn main() -> std::io::Result<()> {
                 let point = ray.position_at(hit.t());
                 let eye = -ray.direction;
                 let normal = hit.object().normal_at(&point);
-                let color = light.lighting(&hit.object().get_material(), point, eye, normal, false);
+                let color = light.lighting(
+                    hit.object(),
+                    &hit.object().get_material(),
+                    point,
+                    eye,
+                    normal,
+                    false,
+                );
                 canvas.set_pixel((x, y), &color);
             }
         }
