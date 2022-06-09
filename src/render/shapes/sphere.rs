@@ -40,7 +40,15 @@ mod test {
     use crate::math::epsilon::ApproxEq;
     use crate::math::transformation::Transformable;
     use crate::math::tuple::Tuple;
+    use crate::render::intersections::{HitComputation, Intersection, Intersections};
+    use crate::render::material::Materialable;
     use crate::render::object::Object;
+
+    fn glass_sphere() -> Object {
+        Object::new_sphere()
+            .with_transparency(1.0)
+            .with_refractive_index(1.5)
+    }
 
     #[test]
     fn ray_intersects_at_2_points() {
@@ -177,5 +185,34 @@ mod test {
         let got = obj.normal_at(&point);
         let want = Vector::new(0.0, 0.70711, -0.70711);
         assert_eq!(got, want);
+    }
+
+    #[test]
+    fn finding_n1_and_n2_at_various_intersections() {
+        let a = glass_sphere()
+            .scale(2.0, 2.0, 2.0)
+            .with_refractive_index(1.5);
+        let b = glass_sphere()
+            .translate(0.0, 0.0, -0.25)
+            .with_refractive_index(2.0);
+        let c = glass_sphere()
+            .translate(0.0, 0.0, 0.25)
+            .with_refractive_index(2.5);
+        let r = Ray::new(Point::new(0.0, 0.0, -4.0), Vector::new(0.0, 0.0, 1.0));
+        let xs = Intersections::new().with_intersections(vec![
+            Intersection::new(2.0, &a),
+            Intersection::new(2.75, &b),
+            Intersection::new(3.25, &c),
+            Intersection::new(4.75, &b),
+            Intersection::new(5.25, &c),
+            Intersection::new(6.0, &a),
+        ]);
+
+        assert_eq!(HitComputation::new(&xs, 0, &r).n(), (1.0, 1.5));
+        assert_eq!(HitComputation::new(&xs, 1, &r).n(), (1.5, 2.0));
+        assert_eq!(HitComputation::new(&xs, 2, &r).n(), (2.0, 2.5));
+        assert_eq!(HitComputation::new(&xs, 3, &r).n(), (2.5, 2.5));
+        assert_eq!(HitComputation::new(&xs, 4, &r).n(), (2.5, 1.5));
+        assert_eq!(HitComputation::new(&xs, 5, &r).n(), (1.5, 1.0));
     }
 }

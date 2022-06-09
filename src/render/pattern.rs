@@ -79,8 +79,7 @@ impl Pattern {
         }
     }
 
-    #[allow(dead_code)]
-    fn new_test() -> Self {
+    pub fn new_test() -> Self {
         Self {
             pattern: PatternType::Test(TestPattern::new()),
             transformation: Matrix::identity(),

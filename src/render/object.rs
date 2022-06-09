@@ -141,6 +141,8 @@ mod test {
             0.9,
             200.0,
             0.0,
+            0.0,
+            1.0,
         );
         let got = obj.get_material();
         assert_eq!(got, want);

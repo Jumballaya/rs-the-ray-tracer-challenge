@@ -1,5 +1,11 @@
 use super::pattern::Pattern;
 
+pub const REFRACTION_VACUUM: f64 = 1.0;
+pub const REFRACTION_AIR: f64 = 1.00029;
+pub const REFRACTION_WATER: f64 = 1.333;
+pub const REFRACTION_GLASS: f64 = 1.52;
+pub const REFRACTION_DIAMOND: f64 = 2.417;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Material {
     pub ambient: f64,
@@ -7,6 +13,8 @@ pub struct Material {
     pub specular: f64,
     pub shininess: f64,
     pub reflective: f64,
+    pub transparency: f64,
+    pub refractive_index: f64,
     pub pattern: Pattern,
 }
 
@@ -18,6 +26,8 @@ impl Material {
         specular: f64,
         shininess: f64,
         reflective: f64,
+        transparency: f64,
+        refractive_index: f64,
     ) -> Self {
         Self {
             ambient,
@@ -26,6 +36,8 @@ impl Material {
             shininess,
             pattern,
             reflective,
+            transparency,
+            refractive_index,
         }
     }
 
@@ -52,6 +64,20 @@ impl Material {
     pub fn with_reflective(self, reflective: f64) -> Self {
         Self { reflective, ..self }
     }
+
+    pub fn with_transparency(self, transparency: f64) -> Self {
+        Self {
+            transparency,
+            ..self
+        }
+    }
+
+    pub fn with_refractive_index(self, refractive_index: f64) -> Self {
+        Self {
+            refractive_index,
+            ..self
+        }
+    }
 }
 
 impl Default for Material {
@@ -62,6 +88,8 @@ impl Default for Material {
             specular: 0.9,
             shininess: 200.0,
             reflective: 0.0,
+            transparency: 0.0,
+            refractive_index: 1.0,
             pattern: Pattern::default(),
         }
     }
@@ -124,6 +152,24 @@ pub trait Materialable {
         mat.reflective = reflective;
         self.with_material(mat)
     }
+
+    fn with_transparency(self, transparency: f64) -> Self
+    where
+        Self: Sized,
+    {
+        let mut mat = self.get_material();
+        mat.transparency = transparency;
+        self.with_material(mat)
+    }
+
+    fn with_refractive_index(self, refractive_index: f64) -> Self
+    where
+        Self: Sized,
+    {
+        let mut mat = self.get_material();
+        mat.refractive_index = refractive_index;
+        self.with_material(mat)
+    }
 }
 
 #[cfg(test)]
@@ -147,6 +193,9 @@ mod test {
         assert_eq!(m.diffuse, 0.9);
         assert_eq!(m.specular, 0.9);
         assert_eq!(m.shininess, 200.0);
+        assert_eq!(m.reflective, 0.0);
+        assert_eq!(m.transparency, 0.0);
+        assert_eq!(m.refractive_index, 1.0);
     }
 
     #[test]
@@ -244,6 +293,8 @@ mod test {
             0.0,
             200.0,
             0.0,
+            0.0,
+            1.0,
         );
         let eye_vector = Vector::new(0.0, 0.0, -1.0);
         let normal_vector = Vector::new(0.0, 0.0, -1.0);
