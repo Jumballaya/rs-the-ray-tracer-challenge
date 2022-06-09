@@ -1,10 +1,10 @@
-use super::shapes::{plane::Plane, sphere::Sphere, test_shape::TestShape};
 use crate::{
     math::{matrix::Matrix, point::Point, ray::Ray, transformation::Transformable, vector::Vector},
     render::{
         intersections::Intersections,
         material::{Material, Materialable},
         shape::Shape,
+        shapes::{cube::Cube, plane::Plane, sphere::Sphere, test_shape::TestShape},
     },
 };
 
@@ -29,6 +29,15 @@ impl Object {
     pub fn new_plane() -> Self {
         Object {
             shape: Shape::Plane(Plane::new()),
+            material: Material::default(),
+            transformation: Matrix::identity(),
+            inv_transformation: Matrix::identity().inverse(),
+        }
+    }
+
+    pub fn new_cube() -> Self {
+        Object {
+            shape: Shape::Cube(Cube::new()),
             material: Material::default(),
             transformation: Matrix::identity(),
             inv_transformation: Matrix::identity().inverse(),

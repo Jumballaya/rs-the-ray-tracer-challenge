@@ -3,8 +3,6 @@
  * Reflection/Refraction/Transparency
  *
  */
-use std::f64::consts::PI;
-
 use raytracer::{
     draw::color::Color,
     math::{point::Point, transformation::Transformable, tuple::Tuple, vector::Vector},
@@ -64,8 +62,8 @@ fn create_center() -> Object {
 }
 
 fn main() -> std::io::Result<()> {
-    let width: usize = 5000;
-    let height: usize = 5000;
+    let width: usize = 1000;
+    let height: usize = 1000;
     let mut world = World::new();
     world.add_light(create_light());
     world.add_object(create_wall());

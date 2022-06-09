@@ -5,11 +5,14 @@ use crate::{
 
 use crate::render::shapes::{plane::Plane, sphere::Sphere, test_shape::TestShape};
 
+use super::shapes::cube::Cube;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
     TestShape(TestShape),
     Sphere(Sphere),
     Plane(Plane),
+    Cube(Cube),
 }
 
 impl Shape {
@@ -18,6 +21,7 @@ impl Shape {
             Self::Plane(_) => Plane::normal_at(local_point),
             Self::Sphere(s) => s.normal_at(local_point),
             Self::TestShape(ts) => ts.normal_at(local_point),
+            Self::Cube(c) => c.normal_at(local_point),
         }
     }
 
@@ -28,9 +32,10 @@ impl Shape {
         intersections: &mut Intersections<'a>,
     ) {
         match self {
-            Shape::TestShape(ts) => ts.intersect(local_ray, obj, intersections),
-            Shape::Sphere(s) => s.intersect(local_ray, obj, intersections),
-            Shape::Plane(p) => p.intersect(local_ray, obj, intersections),
+            Self::TestShape(ts) => ts.intersect(local_ray, obj, intersections),
+            Self::Sphere(s) => s.intersect(local_ray, obj, intersections),
+            Self::Plane(p) => p.intersect(local_ray, obj, intersections),
+            Self::Cube(c) => c.intersect(local_ray, obj, intersections),
         }
     }
 }
