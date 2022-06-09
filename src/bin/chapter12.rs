@@ -34,9 +34,9 @@ fn create_floor() -> Object {
 }
 
 fn gradient() -> Pattern {
-    let orange = Color::new(0.9764705882352941, 0.6509803921568628, 0.12549019607843137);
-    let pink = Color::new(0.8862745098039215, 0.7137254901960784, 0.8117647058823529);
-    Pattern::new_gradient(orange, pink)
+    let c1 = Color::new(0.30980392156862746, 0.36470588235294116, 0.1843137254901961);
+    let c2 = Color::new(0.9490196078431372, 0.39215686274509803, 0.18823529411764706);
+    Pattern::new_gradient(c1, c2)
 }
 
 fn create_cube(u: f64, v: f64) -> Object {
@@ -51,8 +51,8 @@ fn create_cube(u: f64, v: f64) -> Object {
 }
 
 fn main() -> std::io::Result<()> {
-    let width: usize = 500;
-    let height: usize = 250;
+    let width: usize = 1000;
+    let height: usize = 500;
     let mut world = World::new();
     world.add_light(create_light());
     world.add_object(create_floor());
