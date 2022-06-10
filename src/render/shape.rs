@@ -5,7 +5,7 @@ use crate::{
 
 use crate::render::shapes::{plane::Plane, sphere::Sphere, test_shape::TestShape};
 
-use super::shapes::{cone::Cone, cube::Cube, cylinder::Cylinder};
+use super::shapes::{cone::Cone, cube::Cube, cylinder::Cylinder, group::Group};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
@@ -15,6 +15,7 @@ pub enum Shape {
     Cube(Cube),
     Cylinder(Cylinder),
     Cone(Cone),
+    Group(Group),
 }
 
 impl Shape {
@@ -26,6 +27,7 @@ impl Shape {
             Self::Cube(c) => c.normal_at(local_point),
             Self::Cylinder(c) => c.normal_at(local_point),
             Self::Cone(c) => c.normal_at(local_point),
+            Self::Group(g) => g.normal_at(local_point),
         }
     }
 
@@ -42,6 +44,11 @@ impl Shape {
             Self::Cube(c) => c.intersect(local_ray, obj, intersections),
             Self::Cylinder(c) => c.intersect(local_ray, obj, intersections),
             Self::Cone(c) => c.intersect(local_ray, obj, intersections),
+            Self::Group(g) => g.intersect(local_ray, obj, intersections),
         }
+    }
+
+    pub fn skip_world_to_local(&self) -> bool {
+        matches!(self, Shape::Group(_))
     }
 }

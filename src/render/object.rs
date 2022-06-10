@@ -5,8 +5,8 @@ use crate::{
         material::{Material, Materialable},
         shape::Shape,
         shapes::{
-            cone::Cone, cube::Cube, cylinder::Cylinder, plane::Plane, sphere::Sphere,
-            test_shape::TestShape,
+            cone::Cone, cube::Cube, cylinder::Cylinder, group::GroupTree, plane::Plane,
+            sphere::Sphere, test_shape::TestShape,
         },
     },
 };
@@ -17,6 +17,7 @@ pub struct Object {
     material: Material,
     transformation: Matrix,
     inv_transformation: Matrix,
+    inv_transpose_transformation: Matrix,
 }
 
 impl Object {
@@ -25,7 +26,8 @@ impl Object {
             shape: Shape::Sphere(Sphere::new()),
             material: Material::default(),
             transformation: Matrix::identity(),
-            inv_transformation: Matrix::identity().inverse(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
         }
     }
 
@@ -34,7 +36,8 @@ impl Object {
             shape: Shape::Plane(Plane::new()),
             material: Material::default(),
             transformation: Matrix::identity(),
-            inv_transformation: Matrix::identity().inverse(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
         }
     }
 
@@ -43,7 +46,8 @@ impl Object {
             shape: Shape::Cube(Cube::new()),
             material: Material::default(),
             transformation: Matrix::identity(),
-            inv_transformation: Matrix::identity().inverse(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
         }
     }
 
@@ -52,7 +56,8 @@ impl Object {
             shape: Shape::Cone(Cone::new().with_closed(closed).with_max(max).with_min(min)),
             material: Material::default(),
             transformation: Matrix::identity(),
-            inv_transformation: Matrix::identity().inverse(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
         }
     }
 
@@ -66,8 +71,29 @@ impl Object {
             ),
             material: Material::default(),
             transformation: Matrix::identity(),
-            inv_transformation: Matrix::identity().inverse(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
         }
+    }
+
+    pub fn new_group(children: Vec<Object>) -> Self {
+        let children_group_builders = children
+            .iter()
+            .filter_map(|child| match child.get_shape() {
+                Shape::Group(g) => {
+                    if g.children().is_empty() {
+                        None
+                    } else {
+                        Some(GroupTree::from_object(child))
+                    }
+                }
+
+                _ => Some(GroupTree::from_object(child)),
+            })
+            .collect();
+        let group_builder = GroupTree::Node(Object::new_test_shape(), children_group_builders);
+        let object = group_builder.build();
+        object
     }
 
     pub fn new_test_shape() -> Self {
@@ -75,7 +101,29 @@ impl Object {
             shape: Shape::TestShape(TestShape::new()),
             material: Material::default(),
             transformation: Matrix::identity(),
-            inv_transformation: Matrix::identity().inverse(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
+        }
+    }
+
+    pub fn new_empty_shape() -> Self {
+        Object {
+            shape: Shape::TestShape(TestShape::new()),
+            material: Material::default(),
+            transformation: Matrix::identity(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
+        }
+    }
+
+    pub fn world_to_object(&self, p: &Point) -> Point {
+        self.inv_transformation * *p
+    }
+
+    pub fn children(&self) -> Option<&Vec<Object>> {
+        match &self.shape {
+            Shape::Group(g) => Some(g.children()),
+            _ => None,
         }
     }
 
@@ -84,19 +132,37 @@ impl Object {
     }
 
     pub fn normal_at(&self, world_point: &Point) -> Vector {
-        let local_point = self.inv_transformation * *world_point;
-        let local_normal: Vector = self.shape.normal_at(&local_point);
-        let world_normal = self.inv_transformation.transpose() * local_normal;
-        world_normal.normalize()
+        let local_point = self.world_to_object(world_point);
+        let local_normal = self.shape.normal_at(&local_point);
+
+        self.normal_to_world(&local_normal)
+
+        // let local_point = self.inv_transformation * *world_point;
+        // let local_normal: Vector = self.shape.normal_at(&local_point);
+        // let world_normal = self.inv_transformation.transpose() * local_normal;
+        // world_normal.normalize()
+    }
+
+    pub fn normal_to_world(&self, normal: &Vector) -> Vector {
+        (self.inv_transpose_transformation * *normal).normalize()
     }
 
     pub fn intersect<'a>(&'a self, ray: &Ray, intersections: &mut Intersections<'a>) {
-        let local_ray = ray.with_transform(self.inv_transformation);
-        self.shape.intersect(&local_ray, self, intersections);
+        if self.shape.skip_world_to_local() {
+            self.shape.intersect(ray, &self, intersections);
+        } else {
+            let local_ray = ray.with_transform(self.inv_transformation);
+            self.shape.intersect(&local_ray, self, intersections);
+        }
     }
 
     pub fn get_transform_inv(&self) -> Matrix {
         self.inv_transformation
+    }
+
+    pub fn with_shape(mut self, shape: Shape) -> Self {
+        self.shape = shape;
+        self
     }
 }
 
@@ -105,13 +171,31 @@ impl Transformable for Object {
         self.transformation
     }
 
-    fn with_transform(self, tform: Matrix) -> Self {
-        let new_tform = tform * self.transformation;
-        Object {
-            shape: self.shape,
-            material: self.material,
-            transformation: new_tform,
-            inv_transformation: new_tform.inverse(),
+    fn with_transform(self, new_transformation: Matrix) -> Self {
+        match self.get_shape() {
+            Shape::Group(g) => {
+                let children_group_builders = g
+                    .children()
+                    .iter()
+                    .map(|child| GroupTree::from_object(child))
+                    .collect();
+
+                let group_builder = GroupTree::Node(
+                    Object::new_test_shape().with_transform(new_transformation),
+                    children_group_builders,
+                );
+
+                group_builder.build()
+            }
+            _ => {
+                let new_transformation = new_transformation * self.transformation;
+                Object {
+                    transformation: new_transformation,
+                    inv_transformation: new_transformation.inverse(),
+                    inv_transpose_transformation: new_transformation.inverse().transpose(),
+                    ..self
+                }
+            }
         }
     }
 }
@@ -123,6 +207,7 @@ impl Materialable for Object {
             material,
             transformation: self.transformation,
             inv_transformation: self.inv_transformation,
+            inv_transpose_transformation: self.inv_transpose_transformation,
         }
     }
 
@@ -234,6 +319,46 @@ mod test {
         let world_point = Point::new(0.0, root_2_2, -root_2_2);
         let got = obj.normal_at(&world_point);
         let want = Vector::new(0.0, 0.97014, -0.24254);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn converting_a_point_from_world_to_obj_space() {
+        let s = Object::new_sphere().translate(5.0, 0.0, 0.0);
+        let g2 = Object::new_group(vec![s]).scale(2.0, 2.0, 2.0);
+        let g1 = Object::new_group(vec![g2]).rotate_y(PI / 2.0);
+
+        let group_s = g1.children().unwrap()[0].children().unwrap()[0].clone();
+
+        let got = group_s.world_to_object(&Point::new(-2.0, 0.0, -10.0));
+        let want = Point::new(0.0, 0.0, -1.0);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn converting_a_normal_from_object_to_world_space() {
+        let root_3_3 = f64::sqrt(3.0) / 3.0;
+        let s = Object::new_sphere().translate(5.0, 0.0, 0.0);
+        let g2 = Object::new_group(vec![s]).scale(1.0, 2.0, 3.0);
+        let g1 = Object::new_group(vec![g2]).rotate_y(PI / 2.0);
+
+        let group_s = g1.children().unwrap()[0].children().unwrap()[0].clone();
+
+        let got = group_s.normal_to_world(&Vector::new(root_3_3, root_3_3, root_3_3));
+        let want = Vector::new(0.2857, 0.4286, -0.8571);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn finding_the_normal_on_a_child_object() {
+        let s = Object::new_sphere().translate(5.0, 0.0, 0.0);
+        let g2 = Object::new_group(vec![s]).scale(1.0, 2.0, 3.0);
+        let g1 = Object::new_group(vec![g2]).rotate_y(PI / 2.0);
+
+        let group_s = g1.children().unwrap()[0].children().unwrap()[0].clone();
+
+        let got = group_s.normal_at(&Point::new(1.7321, 1.1547, -5.5774));
+        let want = Vector::new(0.285703, 0.42854, -0.857160);
         assert_eq!(got, want);
     }
 }

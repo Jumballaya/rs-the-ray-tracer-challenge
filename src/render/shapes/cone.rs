@@ -16,16 +16,16 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Cone {
-    minimum: f64,
-    maximum: f64,
+    min: f64,
+    max: f64,
     closed: bool,
 }
 
 impl Cone {
     pub fn new() -> Self {
         Self {
-            minimum: -INFINITY,
-            maximum: INFINITY,
+            min: -INFINITY,
+            max: INFINITY,
             closed: false,
         }
     }
@@ -51,12 +51,12 @@ impl Cone {
             let t1 = (-b + disc.sqrt()) / double_a;
 
             let y0 = ray.origin.y() + t0 * ray.direction.y();
-            if self.minimum < y0 && y0 < self.maximum {
+            if self.min < y0 && y0 < self.max {
                 intersections.push(Intersection::new(t0, &obj));
             }
 
             let y1 = ray.origin.y() + t1 * ray.direction.y();
-            if self.minimum < y1 && y1 < self.maximum {
+            if self.min < y1 && y1 < self.max {
                 intersections.push(Intersection::new(t1, &obj));
             }
         }
@@ -66,9 +66,9 @@ impl Cone {
     pub fn normal_at(&self, point: &Point) -> Vector {
         let dist = point.x().powi(2) + point.z().powi(2);
 
-        if dist < 1.0 && point.y() >= (self.maximum - EPSILON) {
+        if dist < 1.0 && point.y() >= (self.max - EPSILON) {
             Vector::new(0.0, 1.0, 0.0)
-        } else if dist < 1.0 && point.y() <= (self.minimum + EPSILON) {
+        } else if dist < 1.0 && point.y() <= (self.min + EPSILON) {
             Vector::new(0.0, -1.0, 0.0)
         } else {
             Vector::new(
@@ -93,13 +93,13 @@ impl Cone {
             return;
         }
 
-        let t = (self.minimum - ray.origin.y()) / ray.direction.y();
-        if Self::check_cap(ray, t, self.minimum) {
+        let t = (self.min - ray.origin.y()) / ray.direction.y();
+        if Self::check_cap(ray, t, self.min) {
             intersections.push(Intersection::new(t, &obj));
         }
 
-        let t = (self.maximum - ray.origin.y()) / ray.direction.y();
-        if Self::check_cap(ray, t, self.maximum) {
+        let t = (self.max - ray.origin.y()) / ray.direction.y();
+        if Self::check_cap(ray, t, self.max) {
             intersections.push(Intersection::new(t, &obj));
         }
     }
@@ -112,17 +112,11 @@ impl Cone {
     }
 
     pub fn with_min(self, min: f64) -> Self {
-        Self {
-            minimum: min,
-            ..self
-        }
+        Self { min, ..self }
     }
 
     pub fn with_max(self, max: f64) -> Self {
-        Self {
-            maximum: max,
-            ..self
-        }
+        Self { max, ..self }
     }
 
     pub fn with_closed(self, closed: bool) -> Self {

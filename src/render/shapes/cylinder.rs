@@ -16,36 +16,18 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Cylinder {
-    minimum: f64,
-    maximum: f64,
+    min: f64,
+    max: f64,
     closed: bool,
 }
 
 impl Cylinder {
     pub fn new() -> Self {
         Self {
-            minimum: -INFINITY,
-            maximum: INFINITY,
+            min: -INFINITY,
+            max: INFINITY,
             closed: false,
         }
-    }
-
-    pub fn with_min(self, min: f64) -> Self {
-        Self {
-            minimum: min,
-            ..self
-        }
-    }
-
-    pub fn with_max(self, max: f64) -> Self {
-        Self {
-            maximum: max,
-            ..self
-        }
-    }
-
-    pub fn with_closed(self, closed: bool) -> Self {
-        Self { closed, ..self }
     }
 
     pub fn intersect<'a>(&self, ray: &Ray, obj: &'a Object, intersections: &mut Intersections<'a>) {
@@ -68,17 +50,41 @@ impl Cylinder {
             let (t0, t1) = if t0 > t1 { (t1, t0) } else { (t0, t1) };
 
             let y0 = ray.origin.y() + t0 * ray.direction.y();
-            if self.min() < y0 && y0 < self.max() {
+            if self.min < y0 && y0 < self.max {
                 intersections.push(Intersection::new(t0, &obj));
             }
 
             let y1 = ray.origin.y() + t1 * ray.direction.y();
-            if self.min() < y1 && y1 < self.max() {
+            if self.min < y1 && y1 < self.max {
                 intersections.push(Intersection::new(t1, &obj));
             }
 
             self.intersect_caps(ray, obj, intersections);
         }
+    }
+
+    pub fn normal_at(&self, point: &Point) -> Vector {
+        let dist = point.x().powi(2) + point.z().powi(2);
+
+        if dist < 1.0 && point.y() >= (self.max - EPSILON) {
+            Vector::new(0.0, 1.0, 0.0)
+        } else if dist < 1.0 && point.y() <= (self.min + EPSILON) {
+            Vector::new(0.0, -1.0, 0.0)
+        } else {
+            Vector::new(point.x(), 0.0, point.z())
+        }
+    }
+
+    pub fn with_min(self, min: f64) -> Self {
+        Self { min, ..self }
+    }
+
+    pub fn with_max(self, max: f64) -> Self {
+        Self { max, ..self }
+    }
+
+    pub fn with_closed(self, closed: bool) -> Self {
+        Self { closed, ..self }
     }
 
     fn check_cap(ray: &Ray, t: f64) -> bool {
@@ -98,43 +104,15 @@ impl Cylinder {
             return;
         }
 
-        let t = (self.min() - ray.origin.y()) / ray.direction.y();
+        let t = (self.min - ray.origin.y()) / ray.direction.y();
         if Self::check_cap(ray, t) {
             intersections.push(Intersection::new(t, &obj));
         }
 
-        let t = (self.max() - ray.origin.y()) / ray.direction.y();
+        let t = (self.max - ray.origin.y()) / ray.direction.y();
         if Self::check_cap(ray, t) {
             intersections.push(Intersection::new(t, &obj));
         }
-    }
-
-    pub fn normal_at(&self, point: &Point) -> Vector {
-        let dist = point.x().powi(2) + point.z().powi(2);
-
-        if dist < 1.0 && point.y() >= (self.max() - EPSILON) {
-            Vector::new(0.0, 1.0, 0.0)
-        } else if dist < 1.0 && point.y() <= (self.min() + EPSILON) {
-            Vector::new(0.0, -1.0, 0.0)
-        } else {
-            Vector::new(point.x(), 0.0, point.z())
-        }
-    }
-
-    pub fn min(&self) -> f64 {
-        self.minimum
-    }
-
-    pub fn max(&self) -> f64 {
-        self.maximum
-    }
-
-    pub fn closed(&self) -> bool {
-        self.closed
-    }
-
-    pub fn open(&self) -> bool {
-        !self.closed
     }
 }
 
@@ -235,8 +213,8 @@ mod test {
     #[test]
     fn default_min_and_max_for_cylinder() {
         let c = Cylinder::new();
-        assert_eq!(c.min(), -INFINITY);
-        assert_eq!(c.max(), INFINITY);
+        assert_eq!(c.min, -INFINITY);
+        assert_eq!(c.max, INFINITY);
     }
 
     #[test]
@@ -266,8 +244,7 @@ mod test {
     #[test]
     fn default_closed_value_for_cylinder() {
         let c = Cylinder::new();
-        assert!(!c.closed());
-        assert!(c.open());
+        assert!(!c.closed);
     }
 
     #[test]
