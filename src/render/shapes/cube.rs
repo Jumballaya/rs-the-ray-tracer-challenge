@@ -146,44 +146,49 @@ mod test {
         let obj = Object::new_test_shape();
         let c = Cube::new();
 
-        let ray1 = Ray::new(
+        let ray = Ray::new(
             Point::new(-2.0, 0.0, 0.0),
             Vector::new(0.2673, 0.5345, 0.8018),
         );
-        let mut ints1 = Intersections::new();
-        c.intersect(&ray1, &obj, &mut ints1);
-        assert_eq!(ints1.len(), 0);
+        let mut ints = Intersections::new();
+        c.intersect(&ray, &obj, &mut ints);
+        assert_eq!(ints.len(), 0);
 
-        let ray2 = Ray::new(
+        let ray = Ray::new(
             Point::new(0.0, -2.0, 0.0),
             Vector::new(0.8018, 0.2673, 0.5345),
         );
-        let mut ints2 = Intersections::new();
-        c.intersect(&ray2, &obj, &mut ints2);
-        assert_eq!(ints2.len(), 0);
+        let mut ints = Intersections::new();
+        c.intersect(&ray, &obj, &mut ints);
+        assert_eq!(ints.len(), 0);
 
-        let ray3 = Ray::new(
+        let ray = Ray::new(
             Point::new(0.0, 0.0, -2.0),
             Vector::new(0.5345, 0.8018, 0.2673),
         );
-        let mut ints3 = Intersections::new();
-        c.intersect(&ray3, &obj, &mut ints3);
-        assert_eq!(ints3.len(), 0);
+        let mut ints = Intersections::new();
+        c.intersect(&ray, &obj, &mut ints);
+        assert_eq!(ints.len(), 0);
 
-        let ray4 = Ray::new(Point::new(2.0, 0.0, 2.0), Vector::new(0.0, 0.0, -1.0));
-        let mut ints4 = Intersections::new();
-        c.intersect(&ray4, &obj, &mut ints4);
-        assert_eq!(ints4.len(), 0);
+        let ray = Ray::new(Point::new(2.0, 0.0, 2.0), Vector::new(0.0, 0.0, -1.0));
+        let mut ints = Intersections::new();
+        c.intersect(&ray, &obj, &mut ints);
+        assert_eq!(ints.len(), 0);
 
-        let ray5 = Ray::new(Point::new(0.0, 2.0, 2.0), Vector::new(0.0, -1.0, 0.0));
-        let mut ints5 = Intersections::new();
-        c.intersect(&ray5, &obj, &mut ints5);
-        assert_eq!(ints5.len(), 0);
+        let ray = Ray::new(Point::new(0.0, 2.0, 2.0), Vector::new(0.0, -1.0, 0.0));
+        let mut ints = Intersections::new();
+        c.intersect(&ray, &obj, &mut ints);
+        assert_eq!(ints.len(), 0);
 
-        let ray6 = Ray::new(Point::new(2.0, 2.0, 0.0), Vector::new(-1.0, 0.0, 0.0));
-        let mut ints6 = Intersections::new();
-        c.intersect(&ray6, &obj, &mut ints6);
-        assert_eq!(ints6.len(), 0);
+        let ray = Ray::new(Point::new(2.0, 2.0, 0.0), Vector::new(-1.0, 0.0, 0.0));
+        let mut ints = Intersections::new();
+        c.intersect(&ray, &obj, &mut ints);
+        assert_eq!(ints.len(), 0);
+
+        let ray = Ray::new(Point::new(0.0, 0.0, 2.0), Vector::new(0.0, 0.0, 1.0));
+        let mut ints = Intersections::new();
+        c.intersect(&ray, &obj, &mut ints);
+        assert_eq!(ints.len(), 0);
     }
 
     #[test]

@@ -4,7 +4,10 @@ use crate::{
         intersections::Intersections,
         material::{Material, Materialable},
         shape::Shape,
-        shapes::{cube::Cube, plane::Plane, sphere::Sphere, test_shape::TestShape},
+        shapes::{
+            cone::Cone, cube::Cube, cylinder::Cylinder, plane::Plane, sphere::Sphere,
+            test_shape::TestShape,
+        },
     },
 };
 
@@ -38,6 +41,29 @@ impl Object {
     pub fn new_cube() -> Self {
         Object {
             shape: Shape::Cube(Cube::new()),
+            material: Material::default(),
+            transformation: Matrix::identity(),
+            inv_transformation: Matrix::identity().inverse(),
+        }
+    }
+
+    pub fn new_cone(min: f64, max: f64, closed: bool) -> Self {
+        Object {
+            shape: Shape::Cone(Cone::new().with_closed(closed).with_max(max).with_min(min)),
+            material: Material::default(),
+            transformation: Matrix::identity(),
+            inv_transformation: Matrix::identity().inverse(),
+        }
+    }
+
+    pub fn new_cylinder(min: f64, max: f64, closed: bool) -> Self {
+        Object {
+            shape: Shape::Cylinder(
+                Cylinder::new()
+                    .with_closed(closed)
+                    .with_max(max)
+                    .with_min(min),
+            ),
             material: Material::default(),
             transformation: Matrix::identity(),
             inv_transformation: Matrix::identity().inverse(),

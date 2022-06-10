@@ -1,10 +1,3 @@
-use std::f64::consts::PI;
-
-/**
- *
- * Cubes!!
- *
- */
 use raytracer::{
     draw::color::Color,
     math::{point::Point, transformation::Transformable, tuple::Tuple, vector::Vector},
@@ -13,6 +6,12 @@ use raytracer::{
         object::Object, pattern::Pattern, world::World,
     },
 };
+/**
+ *
+ * Cubes!!
+ *
+ */
+use std::f64::consts::PI;
 
 fn create_light() -> Light {
     Light::Point(PointLight::new(
