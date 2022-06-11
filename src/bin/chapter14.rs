@@ -24,7 +24,7 @@ fn floor() -> Object {
     );
     Object::new_plane()
         .translate(0.0, -5.0, 0.0)
-        .with_pattern(Pattern::new_checker(c_a, c_b))
+        .with_pattern(Pattern::new_ring(c_a, c_b))
         .with_ambient(0.1)
         .with_diffuse(0.7)
         .with_specular(0.9)

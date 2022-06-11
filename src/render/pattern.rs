@@ -7,7 +7,7 @@ use crate::render::patterns::{SolidPattern, StripePattern, TestPattern};
 
 use super::{
     object::Object,
-    patterns::{CheckerPattern, GradientPattern, RingPattern},
+    patterns::{CheckerPattern, GradientPattern, NoisePattern, RingPattern},
 };
 
 #[derive(Clone, Debug, Copy, PartialEq)]
@@ -18,6 +18,7 @@ enum PatternType {
     Gradient(GradientPattern),
     Ring(RingPattern),
     Checker(CheckerPattern),
+    Noise(NoisePattern),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -68,6 +69,14 @@ impl Pattern {
         }
     }
 
+    pub fn new_noise(color: Color) -> Self {
+        Self {
+            pattern: PatternType::Noise(NoisePattern::new(color)),
+            transformation: Matrix::identity(),
+            inv_transform: Matrix::identity(),
+        }
+    }
+
     pub fn pattern_at(&self, point: &Point) -> Color {
         match &self.pattern {
             PatternType::Stripe(p) => p.pattern_at(point),
@@ -76,6 +85,7 @@ impl Pattern {
             PatternType::Gradient(p) => p.pattern_at(point),
             PatternType::Ring(p) => p.pattern_at(point),
             PatternType::Checker(p) => p.pattern_at(point),
+            PatternType::Noise(p) => p.pattern_at(point),
         }
     }
 
