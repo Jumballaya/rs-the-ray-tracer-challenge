@@ -5,7 +5,7 @@ use crate::{
 
 use crate::render::shapes::{plane::Plane, sphere::Sphere, test_shape::TestShape};
 
-use super::shapes::{cone::Cone, cube::Cube, cylinder::Cylinder, group::Group};
+use super::shapes::{cone::Cone, cube::Cube, cylinder::Cylinder, group::Group, triangle::Triangle};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
@@ -16,6 +16,7 @@ pub enum Shape {
     Cylinder(Cylinder),
     Cone(Cone),
     Group(Group),
+    Triangle(Triangle),
 }
 
 impl Shape {
@@ -28,6 +29,7 @@ impl Shape {
             Self::Cylinder(c) => c.normal_at(local_point),
             Self::Cone(c) => c.normal_at(local_point),
             Self::Group(g) => g.normal_at(local_point),
+            Self::Triangle(t) => t.normal_at(local_point),
         }
     }
 
@@ -45,6 +47,7 @@ impl Shape {
             Self::Cylinder(c) => c.intersect(local_ray, obj, intersections),
             Self::Cone(c) => c.intersect(local_ray, obj, intersections),
             Self::Group(g) => g.intersect(local_ray, obj, intersections),
+            Self::Triangle(t) => t.intersect(local_ray, obj, intersections),
         }
     }
 

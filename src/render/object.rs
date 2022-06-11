@@ -6,7 +6,7 @@ use crate::{
         shape::Shape,
         shapes::{
             cone::Cone, cube::Cube, cylinder::Cylinder, group::GroupTree, plane::Plane,
-            sphere::Sphere, test_shape::TestShape,
+            sphere::Sphere, test_shape::TestShape, triangle::Triangle,
         },
     },
 };
@@ -69,6 +69,16 @@ impl Object {
                     .with_max(max)
                     .with_min(min),
             ),
+            material: Material::default(),
+            transformation: Matrix::identity(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
+        }
+    }
+
+    pub fn new_tri(p1: Point, p2: Point, p3: Point) -> Self {
+        Object {
+            shape: Shape::Triangle(Triangle::new(p1, p2, p3)),
             material: Material::default(),
             transformation: Matrix::identity(),
             inv_transformation: Matrix::identity(),

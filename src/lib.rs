@@ -33,6 +33,7 @@ pub mod render {
         pub mod plane;
         pub mod sphere;
         pub mod test_shape;
+        pub mod triangle;
     }
 
     pub mod lights {
