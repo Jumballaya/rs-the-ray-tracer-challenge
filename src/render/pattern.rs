@@ -69,9 +69,9 @@ impl Pattern {
         }
     }
 
-    pub fn new_noise(color: Color) -> Self {
+    pub fn new_noise(c_a: Color, c_b: Color, threshold: f64) -> Self {
         Self {
-            pattern: PatternType::Noise(NoisePattern::new(color)),
+            pattern: PatternType::Noise(NoisePattern::new(c_a, c_b, threshold)),
             transformation: Matrix::identity(),
             inv_transform: Matrix::identity(),
         }

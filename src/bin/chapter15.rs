@@ -9,5 +9,7 @@ use std::fs;
 fn main() {
     let contents = fs::read_to_string("./chapter12.ppm").expect("Error reading file chapter12.ppm");
 
-    println!("{}", contents);
+    for line in contents.lines() {
+        println!("{}", line);
+    }
 }
