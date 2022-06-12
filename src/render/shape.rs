@@ -54,4 +54,11 @@ impl Shape {
     pub fn skip_world_to_local(&self) -> bool {
         matches!(self, Shape::Group(_))
     }
+
+    pub fn as_triangle(&self) -> Option<Triangle> {
+        match &self {
+            Self::Triangle(t) => Some(t.clone()),
+            _ => None,
+        }
+    }
 }

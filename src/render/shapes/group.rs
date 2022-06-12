@@ -52,8 +52,8 @@ impl GroupTree {
         GroupTree::walk(self, &Matrix::identity())
     }
 
-    fn walk(gb: Self, transform: &Matrix) -> Object {
-        match gb {
+    fn walk(tree: Self, transform: &Matrix) -> Object {
+        match tree {
             GroupTree::Leaf(o) => o.with_transform(*transform),
             GroupTree::Node(group, children) => {
                 let child_transform = *transform * group.get_transform();

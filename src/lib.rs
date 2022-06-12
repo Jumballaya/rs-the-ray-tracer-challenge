@@ -11,6 +11,9 @@ pub mod math {
 pub mod draw {
     pub mod canvas;
     pub mod color;
+    pub mod io {
+        pub mod obj;
+    }
 }
 
 pub mod render {

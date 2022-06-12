@@ -1,4 +1,5 @@
 use crate::{
+    draw::io::obj::ObjFileParser,
     math::{matrix::Matrix, point::Point, ray::Ray, transformation::Transformable, vector::Vector},
     render::{
         intersections::Intersections,
@@ -86,6 +87,10 @@ impl Object {
         }
     }
 
+    pub fn new_model(path: &str) -> Object {
+        ObjFileParser::new_file(path).build()
+    }
+
     pub fn new_group(children: Vec<Object>) -> Self {
         let children_group_builders = children
             .iter()
@@ -146,11 +151,6 @@ impl Object {
         let local_normal = self.shape.normal_at(&local_point);
 
         self.normal_to_world(&local_normal)
-
-        // let local_point = self.inv_transformation * *world_point;
-        // let local_normal: Vector = self.shape.normal_at(&local_point);
-        // let world_normal = self.inv_transformation.transpose() * local_normal;
-        // world_normal.normalize()
     }
 
     pub fn normal_to_world(&self, normal: &Vector) -> Vector {

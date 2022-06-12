@@ -60,6 +60,18 @@ impl Triangle {
         let t = f * (self.e2 * origin_cross_e1);
         intersections.push(Intersection::new(t, obj));
     }
+
+    pub fn p1(&self) -> Point {
+        self.p1
+    }
+
+    pub fn p2(&self) -> Point {
+        self.p2
+    }
+
+    pub fn p3(&self) -> Point {
+        self.p3
+    }
 }
 
 #[cfg(test)]
