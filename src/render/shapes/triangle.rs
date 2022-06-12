@@ -58,7 +58,7 @@ impl Triangle {
         }
 
         let t = f * (self.e2 * origin_cross_e1);
-        intersections.push(Intersection::new(t, obj));
+        intersections.push(Intersection::new(t, obj).with_u_v(u, v));
     }
 
     pub fn p1(&self) -> Point {

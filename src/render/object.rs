@@ -12,6 +12,8 @@ use crate::{
     },
 };
 
+use super::{intersections::Intersection, shapes::smooth_triangle::SmoothTriangle};
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Object {
     shape: Shape,
@@ -87,6 +89,23 @@ impl Object {
         }
     }
 
+    pub fn new_smooth_tri(
+        p1: Point,
+        p2: Point,
+        p3: Point,
+        n1: Vector,
+        n2: Vector,
+        n3: Vector,
+    ) -> Self {
+        Object {
+            shape: Shape::SmoothTriangle(SmoothTriangle::new(p1, p2, p3, n1, n2, n3)),
+            material: Material::default(),
+            transformation: Matrix::identity(),
+            inv_transformation: Matrix::identity(),
+            inv_transpose_transformation: Matrix::identity(),
+        }
+    }
+
     pub fn new_model(path: &str) -> Object {
         ObjFileParser::new_file(path).build()
     }
@@ -146,9 +165,9 @@ impl Object {
         &self.shape
     }
 
-    pub fn normal_at(&self, world_point: &Point) -> Vector {
+    pub fn normal_at(&self, world_point: &Point, int: &Intersection) -> Vector {
         let local_point = self.world_to_object(world_point);
-        let local_normal = self.shape.normal_at(&local_point);
+        let local_normal = self.shape.normal_at(&local_point, int);
 
         self.normal_to_world(&local_normal)
     }
@@ -317,7 +336,10 @@ mod test {
     #[test]
     fn normal_on_translated_shape() {
         let obj = Object::new_sphere().translate(0.0, 1.0, 0.0);
-        let got = obj.normal_at(&Point::new(0.0, 1.70711, -0.70711));
+        let got = obj.normal_at(
+            &Point::new(0.0, 1.70711, -0.70711),
+            &Intersection::new(0.0, &obj),
+        );
         let want = Vector::new(0.0, 0.70711, -0.70711);
         assert_eq!(got, want);
     }
@@ -327,7 +349,7 @@ mod test {
         let obj = Object::new_sphere().rotate_z(PI / 5.0).scale(1.0, 0.5, 1.0);
         let root_2_2 = (2.0 as f64).sqrt() / 2.0;
         let world_point = Point::new(0.0, root_2_2, -root_2_2);
-        let got = obj.normal_at(&world_point);
+        let got = obj.normal_at(&world_point, &Intersection::new(0.0, &obj));
         let want = Vector::new(0.0, 0.97014, -0.24254);
         assert_eq!(got, want);
     }
@@ -367,7 +389,10 @@ mod test {
 
         let group_s = g1.children().unwrap()[0].children().unwrap()[0].clone();
 
-        let got = group_s.normal_at(&Point::new(1.7321, 1.1547, -5.5774));
+        let got = group_s.normal_at(
+            &Point::new(1.7321, 1.1547, -5.5774),
+            &Intersection::new(0.0, &group_s),
+        );
         let want = Vector::new(0.285703, 0.42854, -0.857160);
         assert_eq!(got, want);
     }

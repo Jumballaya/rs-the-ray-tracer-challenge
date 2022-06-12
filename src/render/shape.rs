@@ -5,7 +5,13 @@ use crate::{
 
 use crate::render::shapes::{plane::Plane, sphere::Sphere, test_shape::TestShape};
 
-use super::shapes::{cone::Cone, cube::Cube, cylinder::Cylinder, group::Group, triangle::Triangle};
+use super::{
+    intersections::Intersection,
+    shapes::{
+        cone::Cone, cube::Cube, cylinder::Cylinder, group::Group, smooth_triangle::SmoothTriangle,
+        triangle::Triangle,
+    },
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
@@ -17,10 +23,11 @@ pub enum Shape {
     Cone(Cone),
     Group(Group),
     Triangle(Triangle),
+    SmoothTriangle(SmoothTriangle),
 }
 
 impl Shape {
-    pub fn normal_at(&self, local_point: &Point) -> Vector {
+    pub fn normal_at(&self, local_point: &Point, int: &Intersection) -> Vector {
         match self {
             Self::Plane(_) => Plane::normal_at(local_point),
             Self::Sphere(s) => s.normal_at(local_point),
@@ -30,6 +37,7 @@ impl Shape {
             Self::Cone(c) => c.normal_at(local_point),
             Self::Group(g) => g.normal_at(local_point),
             Self::Triangle(t) => t.normal_at(local_point),
+            Self::SmoothTriangle(st) => st.normal_at(local_point, int),
         }
     }
 
@@ -48,6 +56,7 @@ impl Shape {
             Self::Cone(c) => c.intersect(local_ray, obj, intersections),
             Self::Group(g) => g.intersect(local_ray, obj, intersections),
             Self::Triangle(t) => t.intersect(local_ray, obj, intersections),
+            Self::SmoothTriangle(st) => st.intersect(local_ray, obj, intersections),
         }
     }
 
@@ -58,6 +67,13 @@ impl Shape {
     pub fn as_triangle(&self) -> Option<Triangle> {
         match &self {
             Self::Triangle(t) => Some(t.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_smooth_triangle(&self) -> Option<SmoothTriangle> {
+        match &self {
+            Self::SmoothTriangle(st) => Some(st.clone()),
             _ => None,
         }
     }

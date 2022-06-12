@@ -36,7 +36,7 @@ fn main() -> std::io::Result<()> {
             if let Some(hit) = intersections.get_hit() {
                 let point = ray.position_at(hit.t());
                 let eye = -ray.direction;
-                let normal = hit.object().normal_at(&point);
+                let normal = hit.object().normal_at(&point, &intersections[0]);
                 let color = light.lighting(
                     hit.object(),
                     &hit.object().get_material(),

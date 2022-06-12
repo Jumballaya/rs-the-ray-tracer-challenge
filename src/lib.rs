@@ -34,6 +34,7 @@ pub mod render {
         pub mod cylinder;
         pub mod group;
         pub mod plane;
+        pub mod smooth_triangle;
         pub mod sphere;
         pub mod test_shape;
         pub mod triangle;

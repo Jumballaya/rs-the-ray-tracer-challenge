@@ -8,12 +8,19 @@ use super::material::Materialable;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Intersection<'a> {
     t: f64,
+    u: f64,
+    v: f64,
     object: &'a Object,
 }
 
 impl<'a> Intersection<'a> {
     pub fn new(t: f64, object: &'a Object) -> Self {
-        Self { t, object }
+        Self {
+            t,
+            u: 0.0,
+            v: 0.0,
+            object,
+        }
     }
 
     pub fn t(&self) -> f64 {
@@ -22,6 +29,20 @@ impl<'a> Intersection<'a> {
 
     pub fn object(&self) -> &'a Object {
         &self.object
+    }
+
+    pub fn u(&self) -> f64 {
+        self.u
+    }
+
+    pub fn v(&self) -> f64 {
+        self.v
+    }
+
+    pub fn with_u_v(mut self, u: f64, v: f64) -> Self {
+        self.u = u;
+        self.v = v;
+        self
     }
 }
 
@@ -172,7 +193,7 @@ impl<'a> HitComputation<'a> {
         let t = intersection.t;
 
         let (normal, inside) = {
-            let normal = intersection.object.normal_at(&point);
+            let normal = intersection.object.normal_at(&point, &intersection);
             let normal_dot_eye = normal * eye;
             if normal_dot_eye < 0.0 {
                 (-normal, true)
@@ -440,5 +461,14 @@ mod test {
         let comp = HitComputation::new(&intersections, 0, &r);
         let reflectance = comp.schlick();
         assert!(reflectance.approx_eq(0.48873));
+    }
+
+    #[test]
+    fn intersection_encapsulates_u_and_v() {
+        let obj = Object::new_test_shape();
+        let int = Intersection::new(3.5, &obj).with_u_v(0.2, 0.4);
+
+        assert_eq!(int.u(), 0.2);
+        assert_eq!(int.v(), 0.4);
     }
 }

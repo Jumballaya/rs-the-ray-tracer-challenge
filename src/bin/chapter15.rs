@@ -39,7 +39,7 @@ fn light() -> Light {
 
 fn main() -> std::io::Result<()> {
     let width = 100;
-    let height = 100;
+    let height = 50;
     let fov = PI / 3.0;
     let camera = Camera::new(width, height, fov).view_transform(
         &Point::new(0.0, 5.5, -10.0),
@@ -48,13 +48,8 @@ fn main() -> std::io::Result<()> {
     );
 
     let cow = ObjFileParser::new_file("./assets/obj/pumpkin.obj")
-        .build_with_material(Material::default().with_pattern(Pattern::new_noise(
-            Color::black(),
-            Color::white(),
-            -0.1,
-        )))
+        .build()
         .scale(0.1, 0.1, 0.1)
-        .rotate_y(PI)
         .translate(0.0, 2.5, -2.0);
 
     let mut world = World::new();

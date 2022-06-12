@@ -136,7 +136,7 @@ mod test {
         let obj = Object::new_sphere();
         let p = obj.get_transform().inverse() * Point::new(1.0, 0.0, 0.0);
         let want = Vector::new(1.0, 0.0, 0.0);
-        let got = obj.normal_at(&p);
+        let got = obj.normal_at(&p, &Intersection::new(0.0, &obj));
         assert_eq!(got, want);
     }
 
@@ -145,7 +145,7 @@ mod test {
         let obj = Object::new_sphere();
         let p = obj.get_transform().inverse() * Point::new(0.0, 1.0, 0.0);
         let want = Vector::new(0.0, 1.0, 0.0);
-        let got = obj.normal_at(&p);
+        let got = obj.normal_at(&p, &Intersection::new(0.0, &obj));
         assert_eq!(got, want);
     }
 
@@ -154,7 +154,7 @@ mod test {
         let obj = Object::new_sphere();
         let p = obj.get_transform().inverse() * Point::new(0.0, 0.0, 1.0);
         let want = Vector::new(0.0, 0.0, 1.0);
-        let got = obj.normal_at(&p);
+        let got = obj.normal_at(&p, &Intersection::new(0.0, &obj));
         assert_eq!(got, want);
     }
 
@@ -164,7 +164,7 @@ mod test {
         let obj = Object::new_sphere();
         let p = obj.get_transform().inverse() * Point::new(root_3_3, root_3_3, root_3_3);
         let want = Vector::new(root_3_3, root_3_3, root_3_3);
-        let got = obj.normal_at(&p);
+        let got = obj.normal_at(&p, &Intersection::new(0.0, &obj));
         assert_eq!(got, want);
     }
 
@@ -174,7 +174,7 @@ mod test {
         let obj = Object::new_sphere();
         let p = obj.get_transform().inverse() * Point::new(root_3_3, root_3_3, root_3_3);
         let want = Vector::new(root_3_3, root_3_3, root_3_3).normalize();
-        let got = obj.normal_at(&p);
+        let got = obj.normal_at(&p, &Intersection::new(0.0, &obj));
         assert_eq!(got, want);
     }
 
@@ -182,7 +182,7 @@ mod test {
     fn compute_the_normal_on_a_translated_sphere() {
         let obj = Object::new_sphere().translate(0.0, 1.0, 0.0);
         let point = Point::new(0.0, 1.70711, -0.70711);
-        let got = obj.normal_at(&point);
+        let got = obj.normal_at(&point, &Intersection::new(0.0, &obj));
         let want = Vector::new(0.0, 0.70711, -0.70711);
         assert_eq!(got, want);
     }
